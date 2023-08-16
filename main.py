@@ -5,6 +5,7 @@ from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Chroma
 from PyPDF2 import PdfReader
+from docx import Document
 
 st.title('Note Q&A')
 
@@ -17,11 +18,20 @@ if file is not None:
         reader = PdfReader(file)
         documents = ""
         for page in reader.pages:
-            documents += page.extract_text() + "\n"
+            documents += page.extract_text() + " "
     
     elif file.type == "text/plain":
         documents = file.read().decode()
 
+    elif file.type == "text/csv":
+        documents = file.read().decode()
+
+    elif file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        docx = Document(file)
+        documents = ""
+        for paragraph in docx.paragraphs:
+            documents += paragraph.text + " "
+    
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
     texts = text_splitter.split_text(documents)
     embeddings = OpenAIEmbeddings()
