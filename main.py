@@ -35,7 +35,9 @@ if file is not None:
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
     texts = text_splitter.split_text(documents)
     embeddings = OpenAIEmbeddings()
-    docsearch = Chroma.from_texts(texts, embeddings)
+    # docsearch = Chroma.from_texts(texts, embeddings, persist_directory="./data/chroma_db")
+    docsearch = Chroma(persist_directory="./data/chroma_db", embedding_function=embeddings)
+    docsearch.add_texts(texts)
 
 def generate_response(query):
     llm = OpenAI(temperature=0.2, openai_api_key=openai_api_key)
