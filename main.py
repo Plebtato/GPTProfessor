@@ -52,13 +52,20 @@ def generate_response(query):
 
 st.title('Note Q&A')
 
+st.markdown('#')
+st.subheader('Ask')
 with st.form('my_form'):
-    text = st.text_area('Ask:', 'What are the three key pieces of advice for learning how to code?')
+    text = st.text_area('Ask:', 'What are the three key pieces of advice for learning how to code?', label_visibility='collapsed')
     submitted = st.form_submit_button('Submit')
     if not openai_api_key.startswith('sk-'):
         st.warning('Please enter your OpenAI API key!', icon='⚠')
     if submitted and openai_api_key.startswith('sk-'):
         generate_response(text)
 
-file = st.file_uploader('Upload files', type=["pdf", "docx", "csv", "txt"], )
+st.markdown('#')
+st.subheader('Upload')
+file = st.file_uploader('Upload files:', type=["pdf", "docx", "csv", "txt"], label_visibility='collapsed')
 upload_file(file)
+
+st.markdown('#')
+st.subheader('Saved Files')
