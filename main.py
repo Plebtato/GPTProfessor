@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 import os
+import copy
 from langchain.llms import OpenAI
 from langchain.chains import RetrievalQA
 from langchain.embeddings.openai import OpenAIEmbeddings
@@ -72,6 +73,7 @@ def upload_file(file):
 
             with open(doc_index_path, "w") as outfile:
                 json.dump(dictionary, outfile)
+        
         else:
             last_id = 0
             ids = [str(i) for i in range(last_id, last_id + len(texts))]
@@ -96,6 +98,7 @@ def upload_file(file):
 
 
 def generate_response(query):
+    # TODO: add model options (davinci, chatgpt3 and 4)
     llm = OpenAI(temperature=0.2, openai_api_key=openai_api_key)
     llm_retriever = MultiQueryRetriever.from_llm(retriever=vectordb.as_retriever(), llm=llm)
     qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=llm_retriever)
@@ -114,9 +117,29 @@ def list_saved_files():
             json_obj = json.load(openfile)
 
         saved_docs = json_obj["saved_docs"]
+        
+        for index, doc in enumerate(saved_docs):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("######")
+                st.text(doc["source"])
+            
+            with col2:
 
-        for doc in saved_docs:
-            st.text(doc["source"])
+                def delete_doc():
+                    print("delete ids " + str(doc["ids"]))
+                    vectordb._collection.delete(ids=doc["ids"])
+                    print(vectordb._collection.count())
+                    copy_json = copy.deepcopy(json_obj)
+                    for x in saved_docs:
+                        if x["ids"] == doc["ids"]:
+                            copy_json["saved_docs"].remove(x)
+                            break
+                    with open(doc_index_path, "w") as outfile:
+                        json.dump(copy_json, outfile)
+                
+                st.button("Delete", key=index, on_click=delete_doc)
 
 
 def main():
@@ -127,7 +150,7 @@ def main():
 
     st.markdown('#')
     st.subheader('Ask')
-    with st.form('my_form'):
+    with st.form('ask_form'):
         text = st.text_area('Ask:', 'What are the three key pieces of advice for learning how to code?', label_visibility='collapsed')
         submitted = st.form_submit_button('Submit')
         if not openai_api_key.startswith('sk-'):
@@ -137,8 +160,11 @@ def main():
 
     st.markdown('#')
     st.subheader('Upload')
-    file = st.file_uploader('Upload files:', type=["pdf", "docx", "csv", "txt"], label_visibility='collapsed')
-    upload_file(file)
+    with st.form("upload_form", clear_on_submit=True):
+        file = st.file_uploader('Upload files:', type=["pdf", "docx", "csv", "txt"], label_visibility='collapsed')
+        submitted = st.form_submit_button("Submit")
+        if submitted and file:
+            upload_file(file)
 
     st.markdown('#')
     st.subheader('Saved Files')
