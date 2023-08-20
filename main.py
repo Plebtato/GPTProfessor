@@ -3,9 +3,11 @@ from langchain.llms import OpenAI
 from langchain.chains import RetrievalQA
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain.vectorstores import Chroma
 from PyPDF2 import PdfReader
 from docx import Document
+import json
 
 st.title('Note Q&A')
 
@@ -16,32 +18,32 @@ file = st.file_uploader('Upload files', type=["pdf", "docx", "csv", "txt"], )
 if file is not None:
     if file.type == "application/pdf":
         reader = PdfReader(file)
-        documents = ""
+        input_docs = ""
         for page in reader.pages:
-            documents += page.extract_text() + " "
+            input_docs += page.extract_text() + " "
     
     elif file.type == "text/plain":
-        documents = file.read().decode()
+        input_docs = file.read().decode()
 
     elif file.type == "text/csv":
-        documents = file.read().decode()
+        input_docs = file.read().decode()
 
     elif file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
         docx = Document(file)
-        documents = ""
+        input_docs = ""
         for paragraph in docx.paragraphs:
-            documents += paragraph.text + " "
+            input_docs += paragraph.text + " "
     
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-    texts = text_splitter.split_text(documents)
+    texts = text_splitter.split_text(input_docs)
     embeddings = OpenAIEmbeddings()
-    # docsearch = Chroma.from_texts(texts, embeddings, persist_directory="./data/chroma_db")
-    docsearch = Chroma(persist_directory="./data/chroma_db", embedding_function=embeddings)
-    docsearch.add_texts(texts)
+    vectordb = Chroma(persist_directory="./data/chroma_db", embedding_function=embeddings)
+    vectordb.add_texts(texts)
 
 def generate_response(query):
     llm = OpenAI(temperature=0.2, openai_api_key=openai_api_key)
-    qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=docsearch.as_retriever())
+    llm_retriever = MultiQueryRetriever.from_llm(retriever=vectordb.as_retriever(), llm=llm)
+    qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=llm_retriever)
     st.info(qa.run(query))
 
 with st.form('my_form'):
