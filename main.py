@@ -1,4 +1,6 @@
 import streamlit as st
+import json
+from os import environ
 from langchain.llms import OpenAI
 from langchain.chains import RetrievalQA
 from langchain.embeddings.openai import OpenAIEmbeddings
@@ -7,12 +9,9 @@ from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain.vectorstores import Chroma
 from PyPDF2 import PdfReader
 from docx import Document
-import json
 
 
-openai_api_key = st.sidebar.text_input('OpenAI API Key', type='password')
-
-
+openai_api_key = ""
 embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
 vectordb = Chroma(persist_directory="./data/chroma_db", embedding_function=embeddings)
 
@@ -36,6 +35,8 @@ def upload_file(file):
             input_docs = ""
             for paragraph in docx.paragraphs:
                 input_docs += paragraph.text + " "
+
+        #TODO: PPT
         
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
         texts = text_splitter.split_text(input_docs)
@@ -50,22 +51,30 @@ def generate_response(query):
     st.info(qa.run(query))
 
 
-st.title('Note Q&A')
+def main():
+    openai_api_key = environ.get('OPENAI_API_KEY')
+    openai_api_key = st.sidebar.text_input('OpenAI API Key', value=openai_api_key, type='password')
+    
+    st.title('Note Q&A')
 
-st.markdown('#')
-st.subheader('Ask')
-with st.form('my_form'):
-    text = st.text_area('Ask:', 'What are the three key pieces of advice for learning how to code?', label_visibility='collapsed')
-    submitted = st.form_submit_button('Submit')
-    if not openai_api_key.startswith('sk-'):
-        st.warning('Please enter your OpenAI API key!', icon='⚠')
-    if submitted and openai_api_key.startswith('sk-'):
-        generate_response(text)
+    st.markdown('#')
+    st.subheader('Ask')
+    with st.form('my_form'):
+        text = st.text_area('Ask:', 'What are the three key pieces of advice for learning how to code?', label_visibility='collapsed')
+        submitted = st.form_submit_button('Submit')
+        if not openai_api_key.startswith('sk-'):
+            st.warning('Please enter your OpenAI API key!', icon='⚠')
+        if submitted and openai_api_key.startswith('sk-'):
+            generate_response(text)
 
-st.markdown('#')
-st.subheader('Upload')
-file = st.file_uploader('Upload files:', type=["pdf", "docx", "csv", "txt"], label_visibility='collapsed')
-upload_file(file)
+    st.markdown('#')
+    st.subheader('Upload')
+    file = st.file_uploader('Upload files:', type=["pdf", "docx", "csv", "txt"], label_visibility='collapsed')
+    upload_file(file)
 
-st.markdown('#')
-st.subheader('Saved Files')
+    st.markdown('#')
+    st.subheader('Saved Files')
+
+
+if __name__ == '__main__':
+    main()
