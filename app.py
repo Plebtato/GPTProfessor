@@ -102,9 +102,9 @@ def upload_file(file):
 
 
 def generate_response(query, model):
-    if model == "GPT-4 (Expensive!)":
+    if model == "GPT-4":
         model_name = "gpt-4"
-    elif model == "GPT-3.5 (ChatGPT)":
+    elif model == "GPT-3.5":
         model_name = "gpt-3.5-turbo"
     else:
         model_name = "text-davinci-003"
@@ -170,6 +170,9 @@ def list_saved_files():
 
 
 def main():
+    st.sidebar.header('Collections')
+
+    st.sidebar.divider()
     openai_api_key = os.environ.get('OPENAI_API_KEY')
     openai_api_key = st.sidebar.text_input('OpenAI API Key', value=openai_api_key, type='password')
     
@@ -181,7 +184,8 @@ def main():
         text = st.text_area('Ask:', 'What are the three key pieces of advice for learning how to code?', label_visibility='collapsed')
         model = st.radio(
             "Select Model",
-            ('DaVinci', 'GPT-3.5 (ChatGPT)', 'GPT-4 (Expensive!)')
+            ('DaVinci', 'GPT-3.5', 'GPT-4'),
+            help="Choose the language model to answer the question with.\n1. DaVinci: Low cost, least capable\n2. GPT-3.5: Moderate cost, moderate capability\n3. GPT-4: Expensive, highly capable, requires special OpenAI access"
         )
         submitted = st.form_submit_button('Submit')
         if not openai_api_key.startswith('sk-'):
