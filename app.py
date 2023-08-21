@@ -11,6 +11,7 @@ from langchain.vectorstores import Chroma
 from langchain.vectorstores import FAISS
 from PyPDF2 import PdfReader
 from docx import Document
+from prompts import QA_CHAIN_PROMPT
 
 
 openai_api_key = ""
@@ -44,7 +45,10 @@ def upload_file(file):
 
         #TODO: PPT
         
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000, 
+            chunk_overlap=0
+        )
         texts = text_splitter.split_text(input_docs)
         
         if (os.path.isfile(doc_index_path)):
@@ -97,11 +101,34 @@ def upload_file(file):
                 json.dump(dictionary, outfile)
 
 
-def generate_response(query):
-    # TODO: add model options (davinci, chatgpt3 and 4)
-    llm = OpenAI(temperature=0.2, openai_api_key=openai_api_key)
-    llm_retriever = MultiQueryRetriever.from_llm(retriever=vectordb.as_retriever(), llm=llm)
-    qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=llm_retriever)
+def generate_response(query, model):
+    if model == "GPT-4 (Expensive!)":
+        model_name = "gpt-4"
+    elif model == "GPT-3.5 (ChatGPT)":
+        model_name = "gpt-3.5-turbo"
+    else:
+        model_name = "text-davinci-003"
+
+    if model == "DaVinci":
+        retrieval_count = 3
+    else:
+        retrieval_count = 4
+
+    llm = OpenAI(
+        temperature=0.2, 
+        openai_api_key=openai_api_key,
+        model_name=model_name
+    )
+    llm_retriever = MultiQueryRetriever.from_llm(
+        retriever=vectordb.as_retriever(search_kwargs = {'k':retrieval_count}), 
+        llm=llm
+    )
+    qa = RetrievalQA.from_chain_type(
+        llm=llm, 
+        chain_type="stuff", 
+        retriever=llm_retriever,
+        chain_type_kwargs={"prompt": QA_CHAIN_PROMPT}
+    )
 
     if (query[-1] != "?"):
         # err when no question mark?
@@ -152,11 +179,15 @@ def main():
     st.subheader('Ask')
     with st.form('ask_form'):
         text = st.text_area('Ask:', 'What are the three key pieces of advice for learning how to code?', label_visibility='collapsed')
+        model = st.radio(
+            "Select Model",
+            ('DaVinci', 'GPT-3.5 (ChatGPT)', 'GPT-4 (Expensive!)')
+        )
         submitted = st.form_submit_button('Submit')
         if not openai_api_key.startswith('sk-'):
             st.warning('Please enter your OpenAI API key!', icon='⚠')
         if submitted and openai_api_key.startswith('sk-'):
-            generate_response(text)
+            generate_response(text, model)
 
     st.markdown('#')
     st.subheader('Upload')
