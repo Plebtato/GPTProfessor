@@ -30,6 +30,7 @@ def upload_file(file):
             input_docs = ""
             for page in reader.pages:
                 input_docs += page.extract_text() + " "
+            #TODO: OCR support
         
         elif file.type == "text/plain":
             input_docs = file.read().decode()
@@ -104,15 +105,13 @@ def upload_file(file):
 def generate_response(query, model):
     if model == "GPT-4":
         model_name = "gpt-4"
+        retrieval_count = 7
     elif model == "GPT-3.5":
         model_name = "gpt-3.5-turbo"
-    else:
-        model_name = "text-davinci-003"
-
-    if model == "DaVinci":
         retrieval_count = 3
     else:
-        retrieval_count = 4
+        model_name = "text-davinci-003"
+        retrieval_count = 3
 
     llm = OpenAI(
         temperature=0.2, 
@@ -185,7 +184,7 @@ def main():
         model = st.radio(
             "Select Model",
             ('DaVinci', 'GPT-3.5', 'GPT-4'),
-            help="Choose the language model to answer the question with.\n1. DaVinci: Low cost, least capable\n2. GPT-3.5: Moderate cost, moderate capability\n3. GPT-4: Expensive, highly capable, requires special OpenAI access"
+            help="Choose the language model to answer the question with.\n1. DaVinci: Low cost, least capable. Still good for general use.\n2. GPT-3.5: Moderate cost, moderate capability.\n3. GPT-4: Expensive, highly capable, requires special OpenAI access."
         )
         submitted = st.form_submit_button('Submit')
         if not openai_api_key.startswith('sk-'):
