@@ -3,16 +3,15 @@ import json
 import os
 import copy
 from langchain.llms import OpenAI
-from langchain.chains import RetrievalQA
+from langchain.chains import RetrievalQAWithSourcesChain
+from langchain.chains.qa_with_sources import load_qa_with_sources_chain
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain.vectorstores import Chroma
-from langchain.vectorstores import FAISS
 from PyPDF2 import PdfReader
 from docx import Document
-from prompts import QA_CHAIN_PROMPT
-
+from prompts import QA_CHAIN_PROMPT, DOC_PROMPT
 
 openai_api_key = ""
 
@@ -105,13 +104,13 @@ def upload_file(file):
 def generate_response(query, model):
     if model == "GPT-4":
         model_name = "gpt-4"
-        retrieval_count = 7
+        max_tokens_limit = 6750
     elif model == "GPT-3.5":
         model_name = "gpt-3.5-turbo"
-        retrieval_count = 3
+        max_tokens_limit = 3375
     else:
         model_name = "text-davinci-003"
-        retrieval_count = 3
+        max_tokens_limit = 3375
 
     llm = OpenAI(
         temperature=0.2, 
@@ -119,21 +118,39 @@ def generate_response(query, model):
         model_name=model_name
     )
     llm_retriever = MultiQueryRetriever.from_llm(
-        retriever=vectordb.as_retriever(search_kwargs = {'k':retrieval_count}), 
+        retriever=vectordb.as_retriever(search_kwargs = {'k':8}), 
         llm=llm
     )
-    qa = RetrievalQA.from_chain_type(
+    load_chain = load_qa_with_sources_chain(
         llm=llm, 
-        chain_type="stuff", 
+        chain_type="stuff",
+        prompt=QA_CHAIN_PROMPT,
+        document_prompt=DOC_PROMPT
+    ) 
+    qa_chain = RetrievalQAWithSourcesChain(
+        combine_documents_chain=load_chain,
         retriever=llm_retriever,
-        chain_type_kwargs={"prompt": QA_CHAIN_PROMPT}
+        reduce_k_below_max_tokens=True,
+        max_tokens_limit=max_tokens_limit,
+        return_source_documents=True
     )
 
     if (query[-1] != "?"):
         # err when no question mark?
         query += "?"
 
-    st.info(qa.run(query))
+    result = qa_chain({"question": query}, return_only_outputs=True)
+    
+    sources = []
+    for doc in result["source_documents"]:
+        if doc.metadata["source"] not in sources:
+            sources.append(doc.metadata["source"])
+    
+    source_output = "\n\nSources: "
+    for source in sources:
+        source_output += "\n\n" + source 
+
+    st.info(result["answer"] + source_output)
     print("LLM query done")
 
 
