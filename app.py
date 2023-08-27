@@ -14,7 +14,8 @@ from docx import Document
 from prompts import QA_CHAIN_PROMPT, DOC_PROMPT
 
 openai_api_key = ""
-init_is_create_page = False
+if 'create_popup' not in st.session_state:
+    st.session_state['create_popup'] = False
 
 db_path = os.path.join("data", "chroma_db")
 doc_index_path = os.path.join("data", "doc_index.json")
@@ -30,6 +31,11 @@ def get_collections():
     else:
         return []
 
+def open_popup():
+    st.session_state['create_popup'] = True
+
+def close_popup():
+    st.session_state['create_popup'] = False
 
 def upload_file(file):
     if file is not None:
@@ -197,17 +203,14 @@ def list_saved_files():
 def main():
     # SIDEBAR
     
-    is_create_page = init_is_create_page
-
-    st.sidebar.title(':question: Note Q&A')
+    st.sidebar.title(':question::page_facing_up: Note Q&A')
     st.sidebar.divider()
     st.sidebar.header('Document Collections')
 
     st.sidebar.button("ECE 350", use_container_width=True)
     st.sidebar.button("pentagon leaked documents", use_container_width=True)
     st.sidebar.button("pentagon leaked documents 2", use_container_width=True)
-    if st.sidebar.button(":heavy_plus_sign: New", type ="primary", use_container_width=True):
-        is_create_page = True
+    st.sidebar.button(":heavy_plus_sign: New", type ="primary", use_container_width=True, on_click=open_popup)
 
     st.sidebar.divider()
     openai_api_key = os.environ.get('OPENAI_API_KEY')
@@ -215,7 +218,7 @@ def main():
     
     # CREATE PAGE
 
-    if is_create_page:
+    if st.session_state['create_popup']:
         st.title('Create New Collection')
 
         with st.form('create_form'):
@@ -235,16 +238,13 @@ def main():
                     else:
                         show_name_error = True
             with col2:
-                if st.form_submit_button("Cancel", use_container_width=True):
-                    is_create_page = False
-            
+                st.form_submit_button("Cancel", use_container_width=True, on_click=close_popup)
             if show_name_error:
                 st.error('A collection with this name already exists. Please choose a different name.', icon="🚨")
     # COLLECTION PAGE
 
-    if not is_create_page:
+    if not st.session_state['create_popup']:
         st.title('Title')
-        st.markdown('######')
         st.subheader('Ask')
         with st.form('ask_form'):
             text = st.text_area('Ask:', 'What are the three key pieces of advice for learning how to code?', label_visibility='collapsed')
