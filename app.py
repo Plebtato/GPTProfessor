@@ -14,12 +14,21 @@ from docx import Document
 from prompts import QA_CHAIN_PROMPT, DOC_PROMPT
 
 openai_api_key = ""
+init_is_create_page = False
 
 db_path = os.path.join("data", "chroma_db")
 doc_index_path = os.path.join("data", "doc_index.json")
 
 embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
 vectordb = Chroma(persist_directory=db_path, embedding_function=embeddings)
+
+
+def get_collections():
+    path = "data"
+    if os.path.isdir(path):
+        return [ item for item in os.listdir(path) if os.path.isdir(os.path.join(path, item)) ]
+    else:
+        return []
 
 
 def upload_file(file):
@@ -186,40 +195,81 @@ def list_saved_files():
 
 
 def main():
-    st.sidebar.header('Collections')
+    # SIDEBAR
+    
+    is_create_page = init_is_create_page
+
+    st.sidebar.title(':question: Note Q&A')
+    st.sidebar.divider()
+    st.sidebar.header('Document Collections')
+
+    st.sidebar.button("ECE 350", use_container_width=True)
+    st.sidebar.button("pentagon leaked documents", use_container_width=True)
+    st.sidebar.button("pentagon leaked documents 2", use_container_width=True)
+    if st.sidebar.button(":heavy_plus_sign: New", type ="primary", use_container_width=True):
+        is_create_page = True
 
     st.sidebar.divider()
     openai_api_key = os.environ.get('OPENAI_API_KEY')
     openai_api_key = st.sidebar.text_input('OpenAI API Key', value=openai_api_key, type='password')
     
-    st.title('Note Q&A')
+    # CREATE PAGE
 
-    st.markdown('#')
-    st.subheader('Ask')
-    with st.form('ask_form'):
-        text = st.text_area('Ask:', 'What are the three key pieces of advice for learning how to code?', label_visibility='collapsed')
-        model = st.radio(
-            "Select Model",
-            ('DaVinci', 'GPT-3.5', 'GPT-4'),
-            help="Choose the language model to answer the question with.\n1. DaVinci: Low cost, least capable. Still good for general use.\n2. GPT-3.5: Moderate cost, moderate capability.\n3. GPT-4: Expensive, highly capable, requires special OpenAI access."
-        )
-        submitted = st.form_submit_button('Submit')
-        if not openai_api_key.startswith('sk-'):
-            st.warning('Please enter your OpenAI API key!', icon='⚠')
-        if submitted and openai_api_key.startswith('sk-'):
-            generate_response(text, model)
+    if is_create_page:
+        st.title('Create New Collection')
 
-    st.markdown('#')
-    st.subheader('Upload')
-    with st.form("upload_form", clear_on_submit=True):
-        file = st.file_uploader('Upload files:', type=["pdf", "docx", "csv", "txt"], label_visibility='collapsed')
-        submitted = st.form_submit_button("Submit")
-        if submitted and file:
-            upload_file(file)
+        with st.form('create_form'):
+            show_name_error = False
+            new_collection_name = st.text_input('Name')
+            new_collection_type = st.radio(
+                "Type",
+                ["Manual", "Sync"],
+                captions = ["Add and remove your documents manually.", "Select a folder and automatically upload and sync."])
+            
+            col1, col2 = st.columns(2) 
+            with col1:
+                if st.form_submit_button("Create", type ="primary", use_container_width=True):
+                    if new_collection_name not in get_collections():
+                        show_name_error = False
+                        print("YAY")
+                    else:
+                        show_name_error = True
+            with col2:
+                if st.form_submit_button("Cancel", use_container_width=True):
+                    is_create_page = False
+            
+            if show_name_error:
+                st.error('A collection with this name already exists. Please choose a different name.', icon="🚨")
+    # COLLECTION PAGE
 
-    st.markdown('#')
-    st.subheader('Saved Files')
-    list_saved_files()
+    if not is_create_page:
+        st.title('Title')
+        st.markdown('######')
+        st.subheader('Ask')
+        with st.form('ask_form'):
+            text = st.text_area('Ask:', 'What are the three key pieces of advice for learning how to code?', label_visibility='collapsed')
+            model = st.radio(
+                "Select Model",
+                ('DaVinci', 'GPT-3.5', 'GPT-4'),
+                help="Choose the language model to answer the question with.\n1. DaVinci: Low cost, least capable. Still good for general use.\n2. GPT-3.5: Moderate cost, moderate capability.\n3. GPT-4: Expensive, highly capable, requires special OpenAI access."
+            )
+            submitted_ask = st.form_submit_button('Submit')
+            if not openai_api_key.startswith('sk-'):
+                st.warning('Please enter your OpenAI API key!', icon='⚠')
+            if submitted_ask and openai_api_key.startswith('sk-'):
+                generate_response(text, model)
+
+        st.markdown('######')
+        st.subheader('Upload')
+        with st.form("upload_form", clear_on_submit=True):
+            file = st.file_uploader('Upload files:', type=["pdf", "docx", "csv", "txt"], label_visibility='collapsed')
+            submitted_doc = st.form_submit_button("Submit")
+            if submitted_doc and file:
+                upload_file(file)
+
+        st.markdown('######')
+        st.subheader('Saved Files')
+        list_saved_files()
 
 
 if __name__ == '__main__':
