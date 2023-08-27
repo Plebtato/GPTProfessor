@@ -99,8 +99,6 @@ def upload_file(file, collection):
             with open(doc_index_path, "w") as outfile:
                 json.dump(dictionary, outfile)
 
-        st.session_state['running_db_change'] = False
-
 
 def generate_response(query, model, collection):
     if model == "GPT-4":
@@ -213,14 +211,8 @@ def display_collections():
     for index, collection in enumerate(collections_list):
         def click(collection = collection):
             st.session_state['current_collection'] = collection
-        st.sidebar.button(
-            collection, 
-            key=index, 
-            use_container_width=True, 
-            on_click=click, 
-            args=(collection,), 
-            # disabled=st.session_state['running_db_change']
-        )
+            st.session_state['create_popup'] = False
+        st.sidebar.button(collection, key=index, use_container_width=True, on_click=click, args=(collection,))
 
 
 def open_popup(open = True):
@@ -256,10 +248,6 @@ def create_collection(collection_name, collection_type):
         close_popup()
 
 
-def run_db_change():
-    st.session_state['running_db_change'] = True
-
-
 # STATE AND GLOBAL MANAGEMENT
 
 openai_api_key = ""
@@ -268,9 +256,6 @@ if 'create_popup' not in st.session_state:
 
 if 'current_collection' not in st.session_state:
     st.session_state['current_collection'] = ""
-
-if 'running_db_change' not in st.session_state:
-    st.session_state['running_db_change'] = False
 
 if st.session_state['create_popup'] == False and st.session_state['current_collection'] == "":
     if get_collections():
@@ -357,7 +342,7 @@ if not st.session_state['create_popup']:
     st.subheader('Upload')
     with st.form("upload_form", clear_on_submit=True):
         file = st.file_uploader('Upload files:', type=["pdf", "docx", "csv", "txt"], label_visibility='collapsed')
-        submitted_doc = st.form_submit_button("Submit", on_click=run_db_change)
+        submitted_doc = st.form_submit_button("Submit")
         if not st.session_state['current_collection']:
             st.error('Error, invalid collection.', icon='⚠')
         if submitted_doc and file and st.session_state['current_collection']:
