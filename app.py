@@ -11,23 +11,12 @@ from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain.vectorstores import Chroma
 from PyPDF2 import PdfReader
 from docx import Document
+from pathlib import Path
 from prompts import QA_CHAIN_PROMPT, DOC_PROMPT
 
-openai_api_key = ""
-if 'create_popup' not in st.session_state:
-    st.session_state['create_popup'] = True
 
-if 'current_collection' not in st.session_state:
-    st.session_state['current_collection'] = ""
+def upload_file(file, collection):
 
-db_path = os.path.join("data", "chroma_db")
-doc_index_path = os.path.join("data", "doc_index.json")
-
-embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-vectordb = Chroma(persist_directory=db_path, embedding_function=embeddings)
-
-
-def upload_file(file):
     if file is not None:
         if file.type == "application/pdf":
             reader = PdfReader(file)
@@ -55,6 +44,11 @@ def upload_file(file):
             chunk_overlap=0
         )
         texts = text_splitter.split_text(input_docs)
+
+        db_path = os.path.join("data", collection, "chroma_db")
+        doc_index_path = os.path.join("data", collection, "doc_index.json")
+        embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
+        vectordb = Chroma(persist_directory=db_path, embedding_function=embeddings)
         
         if (os.path.isfile(doc_index_path)):
             with open(doc_index_path, "r") as openfile:
@@ -105,8 +99,10 @@ def upload_file(file):
             with open(doc_index_path, "w") as outfile:
                 json.dump(dictionary, outfile)
 
+        st.session_state['running_db_change'] = False
 
-def generate_response(query, model):
+
+def generate_response(query, model, collection):
     if model == "GPT-4":
         model_name = "gpt-4"
         max_tokens_limit = 6750
@@ -116,6 +112,10 @@ def generate_response(query, model):
     else:
         model_name = "text-davinci-003"
         max_tokens_limit = 3375
+
+    db_path = os.path.join("data", collection, "chroma_db")
+    embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
+    vectordb = Chroma(persist_directory=db_path, embedding_function=embeddings)
 
     llm = OpenAI(
         temperature=0.2, 
@@ -152,15 +152,24 @@ def generate_response(query, model):
             sources.append(doc.metadata["source"])
     
     source_output = "\n\nSources: "
-    for source in sources:
-        source_output += "\n\n" + source 
+    if sources:
+        for source in sources:
+            source_output += "\n\n" + source 
+    else:
+        source_output = ""
 
     st.info(result["answer"] + source_output)
     print("LLM query done")
 
 
-def list_saved_files():
+def display_saved_files(collection):
+    db_path = os.path.join("data", collection, "chroma_db")
+    doc_index_path = os.path.join("data", collection, "doc_index.json")
+    
     if (os.path.isfile(doc_index_path)):
+        embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
+        vectordb = Chroma(persist_directory=db_path, embedding_function=embeddings)
+        
         with open(doc_index_path, "r") as openfile:
             json_obj = json.load(openfile)
 
@@ -187,7 +196,7 @@ def list_saved_files():
                     with open(doc_index_path, "w") as outfile:
                         json.dump(copy_json, outfile)
                 
-                st.button("Delete", key=index, on_click=delete_doc)
+                st.button("Delete", key=collection + "_" + str(index), on_click=delete_doc)
 
 
 def get_collections():
@@ -196,6 +205,22 @@ def get_collections():
         return [ item for item in os.listdir(path) if os.path.isdir(os.path.join(path, item)) ]
     else:
         return []
+
+
+def display_collections():
+    collections_list = get_collections()
+
+    for index, collection in enumerate(collections_list):
+        def click(collection = collection):
+            st.session_state['current_collection'] = collection
+        st.sidebar.button(
+            collection, 
+            key=index, 
+            use_container_width=True, 
+            on_click=click, 
+            args=(collection,), 
+            # disabled=st.session_state['running_db_change']
+        )
 
 
 def open_popup(open = True):
@@ -208,89 +233,137 @@ def close_popup(close = True):
         st.session_state['create_popup'] = False
 
 
+def validate_collection_name(collection_name):
+    return collection_name not in get_collections()
+
+
 def create_collection(collection_name, collection_type):
-    print("Creating")
+    if collection_name and validate_collection_name(collection_name):
+        print("Create collection: " + collection_name)
+        Path(os.path.join("data", collection_name)).mkdir(parents=True, exist_ok=True)
+        save_path = os.path.join("data", collection_name, "doc_index.json")
+        
+        if collection_type == "Manual":
+            dictionary = {
+                "last_id": 0,
+                "saved_docs": []
+            }
+
+            with open(save_path, "w") as outfile:
+                json.dump(dictionary, outfile)
+
+        st.session_state['current_collection'] = collection_name
+        close_popup()
+
+
+def run_db_change():
+    st.session_state['running_db_change'] = True
+
+
+# STATE AND GLOBAL MANAGEMENT
+
+openai_api_key = ""
+if 'create_popup' not in st.session_state:
+    st.session_state['create_popup'] = True
+
+if 'current_collection' not in st.session_state:
+    st.session_state['current_collection'] = ""
+
+if 'running_db_change' not in st.session_state:
+    st.session_state['running_db_change'] = False
+
+if st.session_state['create_popup'] == False and st.session_state['current_collection'] == "":
+    if get_collections():
+        st.session_state['current_collection'] = get_collections()[0]
+    else:
+        st.session_state['create_popup'] = True
+
+
+# SIDEBAR
+
+st.sidebar.title(':question::page_facing_up: Note Q&A')
+st.sidebar.divider()
+
+st.sidebar.header('Document Collections')
+display_collections()
+st.sidebar.button(":heavy_plus_sign: New", type ="primary", use_container_width=True, on_click=open_popup)
+
+st.sidebar.divider()
+openai_api_key = os.environ.get('OPENAI_API_KEY')
+openai_api_key = st.sidebar.text_input('OpenAI API Key', value=openai_api_key, type='password')
+
+
+# CREATE INTERFACE
+
+if st.session_state['create_popup']:
+    st.title('Create New Collection')
+
+    # with st.form('create_form'):
+    show_name_in_use_err = False
+    show_missing_name_err = False
+    new_collection_name = st.text_input('Name')
+    new_collection_type = st.radio(
+        "Type",
+        ["Manual", "Sync"],
+        captions = ["Add and remove your documents manually.", "Select a folder and automatically upload and sync."])
+    col1, col2 = st.columns(2) 
+
+    if get_collections():
+        with col1:
+            if st.button("Create", type ="primary", use_container_width=True, on_click=create_collection, args=(new_collection_name, new_collection_type)):
+                if not new_collection_name:
+                    show_missing_name_err = True
+                elif validate_collection_name(new_collection_name):
+                    show_name_in_use_err = False
+                    show_missing_name_err = False
+                else:
+                    show_name_in_use_err = True
+        with col2:
+            st.button("Cancel", use_container_width=True, on_click=close_popup)
+    else:
+        if st.button("Create", type ="primary", use_container_width=True, on_click=create_collection, args=(new_collection_name, new_collection_type)):
+            if not new_collection_name:
+                show_missing_name_err = True
+
+    if show_name_in_use_err:
+        st.error('A collection with this name already exists. Please choose a different name.', icon="🚨")
+
+    if show_missing_name_err:
+        st.error('Please enter a name for your collection.', icon="🚨")   
+
+
+# COLLECTION INTERFACE
+
+if not st.session_state['create_popup']:
+    st.title(st.session_state['current_collection'])
     
+    with st.form('ask_form'):
+        text = st.text_area('Question:', placeholder="Ask me anything about your documents!")
+        model = st.radio(
+            "Select Model",
+            ('DaVinci', 'GPT-3.5', 'GPT-4'),
+            help="Choose the language model to answer the question with.\n1. DaVinci: Low cost, least capable. Still good for general use.\n2. GPT-3.5: Moderate cost, moderate capability.\n3. GPT-4: Expensive, highly capable, requires special OpenAI access."
+        )
+        submitted_ask = st.form_submit_button('Submit')
+        if not openai_api_key.startswith('sk-'):
+            st.warning('Please enter your OpenAI API key!', icon='⚠')
+        if not st.session_state['current_collection']:
+            st.error('Error, invalid collection.', icon='⚠')
+        if submitted_ask and openai_api_key.startswith('sk-') and st.session_state['current_collection']:
+            with st.spinner():
+                generate_response(text, model, st.session_state['current_collection'])
 
+    st.markdown('######')
+    st.subheader('Upload')
+    with st.form("upload_form", clear_on_submit=True):
+        file = st.file_uploader('Upload files:', type=["pdf", "docx", "csv", "txt"], label_visibility='collapsed')
+        submitted_doc = st.form_submit_button("Submit", on_click=run_db_change)
+        if not st.session_state['current_collection']:
+            st.error('Error, invalid collection.', icon='⚠')
+        if submitted_doc and file and st.session_state['current_collection']:
+            with st.spinner():
+                upload_file(file, st.session_state['current_collection'])
 
-def main():
-    # SIDEBAR
-    
-    st.sidebar.title(':question::page_facing_up: Note Q&A')
-    st.sidebar.divider()
-    st.sidebar.header('Document Collections')
-
-    st.sidebar.button("ECE 350", use_container_width=True)
-    st.sidebar.button("pentagon leaked documents", use_container_width=True)
-    st.sidebar.button("pentagon leaked documents 2", use_container_width=True)
-    st.sidebar.button(":heavy_plus_sign: New", type ="primary", use_container_width=True, on_click=open_popup)
-
-    st.sidebar.divider()
-    openai_api_key = os.environ.get('OPENAI_API_KEY')
-    openai_api_key = st.sidebar.text_input('OpenAI API Key', value=openai_api_key, type='password')
-    
-    # CREATE PAGE
-
-    if st.session_state['create_popup']:
-        st.title('Create New Collection')
-
-        with st.form('create_form'):
-            show_name_error = False
-            new_collection_name = st.text_input('Name')
-            new_collection_type = st.radio(
-                "Type",
-                ["Manual", "Sync"],
-                captions = ["Add and remove your documents manually.", "Select a folder and automatically upload and sync."])
-            col1, col2 = st.columns(2) 
-
-            if len(get_collections()) != 0:
-                with col1:
-                    is_name_valid = new_collection_name not in get_collections()
-                    if st.form_submit_button("Create", type ="primary", use_container_width=True, on_click=close_popup, args=(is_name_valid,)):
-                        if is_name_valid:
-                            show_name_error = False
-                            create_collection(new_collection_name, new_collection_type)
-                        else:
-                            show_name_error = True
-                with col2:
-                    st.form_submit_button("Cancel", use_container_width=True, on_click=close_popup)
-            else:
-                if st.form_submit_button("Create", type ="primary", use_container_width=True):
-                    show_name_error = False
-                    create_collection(new_collection_name, new_collection_type, on_click=close_popup)
-
-            if show_name_error:
-                st.error('A collection with this name already exists. Please choose a different name.', icon="🚨")
-    # COLLECTION PAGE
-
-    if not st.session_state['create_popup']:
-        st.title('Title')
-        st.subheader('Ask')
-        with st.form('ask_form'):
-            text = st.text_area('Ask:', 'What are the three key pieces of advice for learning how to code?', label_visibility='collapsed')
-            model = st.radio(
-                "Select Model",
-                ('DaVinci', 'GPT-3.5', 'GPT-4'),
-                help="Choose the language model to answer the question with.\n1. DaVinci: Low cost, least capable. Still good for general use.\n2. GPT-3.5: Moderate cost, moderate capability.\n3. GPT-4: Expensive, highly capable, requires special OpenAI access."
-            )
-            submitted_ask = st.form_submit_button('Submit')
-            if not openai_api_key.startswith('sk-'):
-                st.warning('Please enter your OpenAI API key!', icon='⚠')
-            if submitted_ask and openai_api_key.startswith('sk-'):
-                generate_response(text, model)
-
-        st.markdown('######')
-        st.subheader('Upload')
-        with st.form("upload_form", clear_on_submit=True):
-            file = st.file_uploader('Upload files:', type=["pdf", "docx", "csv", "txt"], label_visibility='collapsed')
-            submitted_doc = st.form_submit_button("Submit")
-            if submitted_doc and file:
-                upload_file(file)
-
-        st.markdown('######')
-        st.subheader('Saved Files')
-        list_saved_files()
-
-
-if __name__ == '__main__':
-    main()
+    st.markdown('######')
+    st.subheader('Saved Files')
+    display_saved_files(st.session_state['current_collection'])
