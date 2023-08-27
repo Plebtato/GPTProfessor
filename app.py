@@ -246,7 +246,7 @@ def main():
             if len(get_collections()) != 0:
                 with col1:
                     is_name_valid = new_collection_name not in get_collections()
-                    if st.form_submit_button("Create", type ="primary", use_container_width=True, on_click=open_popup, args=(is_name_valid,)):
+                    if st.form_submit_button("Create", type ="primary", use_container_width=True, on_click=close_popup, args=(is_name_valid,)):
                         if is_name_valid:
                             show_name_error = False
                             create_collection(new_collection_name, new_collection_type)
@@ -257,7 +257,7 @@ def main():
             else:
                 if st.form_submit_button("Create", type ="primary", use_container_width=True):
                     show_name_error = False
-                    create_collection(new_collection_name, new_collection_type)
+                    create_collection(new_collection_name, new_collection_type, on_click=close_popup)
 
             if show_name_error:
                 st.error('A collection with this name already exists. Please choose a different name.', icon="🚨")
