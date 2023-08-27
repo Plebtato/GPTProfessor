@@ -15,7 +15,10 @@ from prompts import QA_CHAIN_PROMPT, DOC_PROMPT
 
 openai_api_key = ""
 if 'create_popup' not in st.session_state:
-    st.session_state['create_popup'] = False
+    st.session_state['create_popup'] = True
+
+if 'current_collection' not in st.session_state:
+    st.session_state['current_collection'] = ""
 
 db_path = os.path.join("data", "chroma_db")
 doc_index_path = os.path.join("data", "doc_index.json")
@@ -23,19 +26,6 @@ doc_index_path = os.path.join("data", "doc_index.json")
 embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
 vectordb = Chroma(persist_directory=db_path, embedding_function=embeddings)
 
-
-def get_collections():
-    path = "data"
-    if os.path.isdir(path):
-        return [ item for item in os.listdir(path) if os.path.isdir(os.path.join(path, item)) ]
-    else:
-        return []
-
-def open_popup():
-    st.session_state['create_popup'] = True
-
-def close_popup():
-    st.session_state['create_popup'] = False
 
 def upload_file(file):
     if file is not None:
@@ -200,6 +190,29 @@ def list_saved_files():
                 st.button("Delete", key=index, on_click=delete_doc)
 
 
+def get_collections():
+    path = "data"
+    if os.path.isdir(path):
+        return [ item for item in os.listdir(path) if os.path.isdir(os.path.join(path, item)) ]
+    else:
+        return []
+
+
+def open_popup(open = True):
+    if open:
+        st.session_state['create_popup'] = True
+
+
+def close_popup(close = True):
+    if close:
+        st.session_state['create_popup'] = False
+
+
+def create_collection(collection_name, collection_type):
+    print("Creating")
+    
+
+
 def main():
     # SIDEBAR
     
@@ -228,17 +241,24 @@ def main():
                 "Type",
                 ["Manual", "Sync"],
                 captions = ["Add and remove your documents manually.", "Select a folder and automatically upload and sync."])
-            
             col1, col2 = st.columns(2) 
-            with col1:
+
+            if len(get_collections()) != 0:
+                with col1:
+                    is_name_valid = new_collection_name not in get_collections()
+                    if st.form_submit_button("Create", type ="primary", use_container_width=True, on_click=open_popup, args=(is_name_valid,)):
+                        if is_name_valid:
+                            show_name_error = False
+                            create_collection(new_collection_name, new_collection_type)
+                        else:
+                            show_name_error = True
+                with col2:
+                    st.form_submit_button("Cancel", use_container_width=True, on_click=close_popup)
+            else:
                 if st.form_submit_button("Create", type ="primary", use_container_width=True):
-                    if new_collection_name not in get_collections():
-                        show_name_error = False
-                        print("YAY")
-                    else:
-                        show_name_error = True
-            with col2:
-                st.form_submit_button("Cancel", use_container_width=True, on_click=close_popup)
+                    show_name_error = False
+                    create_collection(new_collection_name, new_collection_type)
+
             if show_name_error:
                 st.error('A collection with this name already exists. Please choose a different name.', icon="🚨")
     # COLLECTION PAGE
