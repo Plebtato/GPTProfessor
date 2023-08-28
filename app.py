@@ -11,6 +11,7 @@ from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain.vectorstores import Chroma
 from PyPDF2 import PdfReader
 from docx import Document
+from send2trash import send2trash
 from pathlib import Path
 from prompts import QA_CHAIN_PROMPT, DOC_PROMPT
 
@@ -45,10 +46,9 @@ def upload_file(file, collection):
         )
         texts = text_splitter.split_text(input_docs)
 
-        db_path = os.path.join("data", collection, "chroma_db")
-        doc_index_path = os.path.join("data", collection, "doc_index.json")
+        doc_index_path = os.path.join("data", "doc_index", collection + ".json")
         embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-        vectordb = Chroma(persist_directory=db_path, embedding_function=embeddings)
+        vectordb = Chroma(collection, persist_directory=db_path, embedding_function=embeddings)
         
         if (os.path.isfile(doc_index_path)):
             with open(doc_index_path, "r") as openfile:
@@ -111,9 +111,8 @@ def generate_response(query, model, collection):
         model_name = "text-davinci-003"
         max_tokens_limit = 3375
 
-    db_path = os.path.join("data", collection, "chroma_db")
     embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-    vectordb = Chroma(persist_directory=db_path, embedding_function=embeddings)
+    vectordb = Chroma(collection, persist_directory=db_path, embedding_function=embeddings)
 
     llm = OpenAI(
         temperature=0.2, 
@@ -161,12 +160,11 @@ def generate_response(query, model, collection):
 
 
 def display_saved_files(collection):
-    db_path = os.path.join("data", collection, "chroma_db")
-    doc_index_path = os.path.join("data", collection, "doc_index.json")
+    doc_index_path = os.path.join("data", "doc_index", collection + ".json")
     
     if (os.path.isfile(doc_index_path)):
         embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-        vectordb = Chroma(persist_directory=db_path, embedding_function=embeddings)
+        vectordb = Chroma(collection, persist_directory=db_path, embedding_function=embeddings)
         
         with open(doc_index_path, "r") as openfile:
             json_obj = json.load(openfile)
@@ -194,13 +192,15 @@ def display_saved_files(collection):
                     with open(doc_index_path, "w") as outfile:
                         json.dump(copy_json, outfile)
                 
-                st.button("Delete", key=collection + "_" + str(index), on_click=delete_doc)
+                st.button("Delete", key=collection + "_" + str(index), on_click=delete_doc, use_container_width=True)
 
 
 def get_collections():
-    path = "data"
-    if os.path.isdir(path):
-        return [ item for item in os.listdir(path) if os.path.isdir(os.path.join(path, item)) ]
+    collections_path = os.path.join("data", "collections.json")
+    if os.path.isfile(collections_path):
+        with open(collections_path, "r") as openfile:
+            json_obj = json.load(openfile)
+        return json_obj["collections"]
     else:
         return []
 
@@ -230,39 +230,87 @@ def validate_collection_name(collection_name):
 
 
 def create_collection(collection_name, collection_type):
+    collections_path = os.path.join("data", "collections.json")
+
+    if not get_collections():
+        Path(os.path.join("data", "doc_index")).mkdir(parents=True, exist_ok=True)
+        create_collection_dict = {
+            "collections": []
+        }
+
+        with open(collections_path, "w") as outfile:
+            json.dump(create_collection_dict, outfile)
+    
     if collection_name and validate_collection_name(collection_name):
         print("Create collection: " + collection_name)
-        Path(os.path.join("data", collection_name)).mkdir(parents=True, exist_ok=True)
-        save_path = os.path.join("data", collection_name, "doc_index.json")
-        
+        doc_index_path = os.path.join("data", "doc_index", collection_name + ".json")
+
         if collection_type == "Manual":
-            dictionary = {
+            manual_collection_dict = {
                 "last_id": 0,
                 "saved_docs": []
             }
 
-            with open(save_path, "w") as outfile:
-                json.dump(dictionary, outfile)
+            with open(doc_index_path, "w") as outfile:
+                json.dump(manual_collection_dict, outfile)
+
+        collections_list = get_collections()
+        collections_list.append(collection_name)
+        add_collection_dict = {
+            "collections": collections_list
+        }
+
+        with open(collections_path, "w") as outfile:
+            json.dump(add_collection_dict, outfile)
 
         st.session_state['current_collection'] = collection_name
         close_popup()
 
 
+def flag_collection_to_delete(collection):
+    doc_index_path = os.path.join("data", "doc_index", collection + ".json")
+    
+    if os.path.exists(doc_index_path):
+        embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
+        vectordb = Chroma(collection, persist_directory=db_path, embedding_function=embeddings)
+        vectordb.delete_collection()
+        print("delete collection")
+    
+    st.session_state['delete_collection'] = collection
+    st.session_state['current_collection'] = ""
+    st.session_state['create_popup'] = True
+    
+
+
+def delete_collection(collection):
+    doc_index_path = os.path.join("data", "doc_index", collection + ".json")
+    if os.path.exists(path):
+        send2trash(path)
+    st.session_state['delete_collection'] = ""
+
+
 # STATE AND GLOBAL MANAGEMENT
 
+db_path = os.path.join("data", "chroma_db")
 openai_api_key = ""
+
 if 'create_popup' not in st.session_state:
     st.session_state['create_popup'] = True
 
 if 'current_collection' not in st.session_state:
     st.session_state['current_collection'] = ""
 
-if st.session_state['create_popup'] == False and st.session_state['current_collection'] == "":
+if 'delete_collection' not in st.session_state:
+    st.session_state['delete_collection'] = ""
+
+if st.session_state['create_popup'] == False and not st.session_state['current_collection']:
     if get_collections():
         st.session_state['current_collection'] = get_collections()[0]
     else:
         st.session_state['create_popup'] = True
 
+if st.session_state['delete_collection']:
+    delete_collection(st.session_state['delete_collection'])
 
 # SIDEBAR
 
@@ -351,4 +399,10 @@ if not st.session_state['create_popup']:
 
     st.markdown('######')
     st.subheader('Saved Files')
-    display_saved_files(st.session_state['current_collection'])
+    with st.expander("", expanded=True):
+        display_saved_files(st.session_state['current_collection'])
+
+    st.markdown('######')
+    st.divider()
+    print(st.session_state["current_collection"])
+    # st.button('Delete Collection', type="primary", use_container_width=True, on_click=flag_collection_to_delete, args=(st.session_state["current_collection"],))
