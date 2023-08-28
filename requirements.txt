@@ -5,4 +5,3 @@ tiktoken
 chromadb
 pypdf2
 python-docx
-send2trash
