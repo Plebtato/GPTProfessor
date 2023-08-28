@@ -149,8 +149,12 @@ def generate_response(query, model, collection):
     
     source_output = "\n\nSources: "
     if sources:
-        for source in sources:
-            source_output += "\n\n" + source 
+        # sometimes still returns sources when answer is not found, only occurs when Chroma collection is specified (???)
+        if result["answer"][0:5] != "Sorry":
+            for source in sources:
+                source_output += "\n\n" + source
+        else:
+            source_output = ""  
     else:
         source_output = ""
 
