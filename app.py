@@ -45,9 +45,9 @@ def upload_file(file, collection):
         )
         texts = text_splitter.split_text(input_docs)
 
-        doc_index_path = os.path.join("data", "doc_index", collection + ".json")
+        doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
         embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-        vectordb = Chroma(collection, persist_directory=db_path, embedding_function=embeddings)
+        vectordb = Chroma("db" + str(collection), persist_directory=db_path, embedding_function=embeddings)
         
         if (os.path.isfile(doc_index_path)):
             with open(doc_index_path, "r") as openfile:
@@ -111,7 +111,7 @@ def generate_response(query, model, collection):
         max_tokens_limit = 3375
 
     embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-    vectordb = Chroma(collection, persist_directory=db_path, embedding_function=embeddings)
+    vectordb = Chroma("db" + str(collection), persist_directory=db_path, embedding_function=embeddings)
 
     llm = OpenAI(
         temperature=0.2, 
@@ -141,7 +141,7 @@ def generate_response(query, model, collection):
         query += "?"
 
     result = qa_chain({"question": query}, return_only_outputs=True)
-    
+    print(result)
     sources = []
     for doc in result["source_documents"]:
         if doc.metadata["source"] not in sources:
@@ -159,11 +159,11 @@ def generate_response(query, model, collection):
 
 
 def display_saved_files(collection):
-    doc_index_path = os.path.join("data", "doc_index", collection + ".json")
+    doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
     
     if (os.path.isfile(doc_index_path)):
         embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-        vectordb = Chroma(collection, persist_directory=db_path, embedding_function=embeddings)
+        vectordb = Chroma("db" + str(collection), persist_directory=db_path, embedding_function=embeddings)
         
         with open(doc_index_path, "r") as openfile:
             json_obj = json.load(openfile)
@@ -191,7 +191,7 @@ def display_saved_files(collection):
                     with open(doc_index_path, "w") as outfile:
                         json.dump(copy_json, outfile)
                 
-                st.button("Delete", key=collection + "_" + str(index), on_click=delete_doc, use_container_width=True)
+                st.button("Delete", key=str(collection) + "_" + str(index), on_click=delete_doc, use_container_width=True)
 
 
 def get_collections():
@@ -208,9 +208,9 @@ def display_collections():
 
     for index, collection in enumerate(collections_list):
         def click(collection = collection):
-            st.session_state['current_collection'] = collection
+            st.session_state['current_collection_id'] = collection["id"]
             st.session_state['create_popup'] = False
-        st.sidebar.button(collection, key=index, use_container_width=True, on_click=click, args=(collection,))
+        st.sidebar.button(collection["name"], key=index, use_container_width=True, on_click=click, args=(collection,))
 
 
 def open_popup(open = True):
@@ -224,7 +224,11 @@ def close_popup(close = True):
 
 
 def validate_collection_name(collection_name):
-    return collection_name not in get_collections()
+    collections = get_collections()
+    for collection in collections:
+        if collection_name == collection["name"]:
+            return False
+    return True
 
 
 def create_collection(collection_name, collection_type):
@@ -238,8 +242,15 @@ def create_collection(collection_name, collection_type):
             json.dump(create_collection_dict, outfile)
     
     if collection_name and validate_collection_name(collection_name):
+        collections_list = get_collections()
+        
+        if collections_list:
+            id = collections_list[-1]["id"] + 1
+        else:
+            id = 1
+        
         print("Create collection: " + collection_name)
-        doc_index_path = os.path.join("data", "doc_index", collection_name + ".json")
+        doc_index_path = os.path.join("data", "doc_index", str(id) + ".json")
 
         if collection_type == "Manual":
             manual_collection_dict = {
@@ -250,8 +261,10 @@ def create_collection(collection_name, collection_type):
             with open(doc_index_path, "w") as outfile:
                 json.dump(manual_collection_dict, outfile)
 
-        collections_list = get_collections()
-        collections_list.append(collection_name)
+        collections_list.append({
+            "name": collection_name,
+            "id": id
+        })
         add_collection_dict = {
             "collections": collections_list
         }
@@ -259,21 +272,25 @@ def create_collection(collection_name, collection_type):
         with open(collections_path, "w") as outfile:
             json.dump(add_collection_dict, outfile)
 
-        st.session_state['current_collection'] = collection_name
+        st.session_state['current_collection_id'] = id
         close_popup()
 
 
 def delete_collection(collection):
-    doc_index_path = os.path.join("data", "doc_index", collection + ".json")
+    doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
 
     if os.path.exists(doc_index_path):
         embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-        vectordb = Chroma(collection, persist_directory=db_path, embedding_function=embeddings)
+        vectordb = Chroma("db" + str(collection), persist_directory=db_path, embedding_function=embeddings)
         vectordb.delete_collection()
         
         os.remove(doc_index_path)
         collections_list = get_collections()
-        collections_list.remove(collection)
+        for x in collections_list:
+            if x["id"] == collection:
+                collections_list.remove(x)
+                break
+        
         add_collection_dict = {
             "collections": collections_list
         }
@@ -283,7 +300,7 @@ def delete_collection(collection):
 
         print("deleted collection")
 
-    st.session_state['current_collection'] = ""
+    st.session_state['current_collection_id'] = ""
     st.session_state['create_popup'] = True
 
 
@@ -296,12 +313,12 @@ openai_api_key = ""
 if 'create_popup' not in st.session_state:
     st.session_state['create_popup'] = True
 
-if 'current_collection' not in st.session_state:
-    st.session_state['current_collection'] = ""
+if 'current_collection_id' not in st.session_state:
+    st.session_state['current_collection_id'] = ""
 
-if st.session_state['create_popup'] == False and not st.session_state['current_collection']:
+if st.session_state['create_popup'] == False and not st.session_state['current_collection_id']:
     if get_collections():
-        st.session_state['current_collection'] = get_collections()[0]
+        st.session_state['current_collection_id'] = get_collections()[0]['id']
     else:
         st.session_state['create_popup'] = True
 
@@ -362,7 +379,12 @@ if st.session_state['create_popup']:
 # COLLECTION INTERFACE
 
 if not st.session_state['create_popup']:
-    st.title(st.session_state['current_collection'])
+    title = ""
+    for collection in get_collections():
+        if collection["id"] == st.session_state['current_collection_id']:
+            title = collection["name"]
+            break
+    st.title(title)
     
     with st.form('ask_form'):
         text = st.text_area('Question:', placeholder="Ask me anything about your documents!")
@@ -374,29 +396,28 @@ if not st.session_state['create_popup']:
         submitted_ask = st.form_submit_button('Submit')
         if not openai_api_key.startswith('sk-'):
             st.warning('Please enter your OpenAI API key!', icon='⚠')
-        if not st.session_state['current_collection']:
+        if not st.session_state['current_collection_id']:
             st.error('Error, invalid collection.', icon='⚠')
-        if submitted_ask and openai_api_key.startswith('sk-') and st.session_state['current_collection']:
+        if submitted_ask and openai_api_key.startswith('sk-') and st.session_state['current_collection_id']:
             with st.spinner():
-                generate_response(text, model, st.session_state['current_collection'])
+                generate_response(text, model, st.session_state['current_collection_id'])
 
     st.markdown('######')
     st.subheader('Upload')
     with st.form("upload_form", clear_on_submit=True):
         file = st.file_uploader('Upload files:', type=["pdf", "docx", "csv", "txt"], label_visibility='collapsed')
         submitted_doc = st.form_submit_button("Submit")
-        if not st.session_state['current_collection']:
+        if not st.session_state['current_collection_id']:
             st.error('Error, invalid collection.', icon='⚠')
-        if submitted_doc and file and st.session_state['current_collection']:
+        if submitted_doc and file and st.session_state['current_collection_id']:
             with st.spinner():
-                upload_file(file, st.session_state['current_collection'])
+                upload_file(file, st.session_state['current_collection_id'])
 
     st.markdown('######')
     st.subheader('Saved Files')
     with st.expander("", expanded=True):
-        display_saved_files(st.session_state['current_collection'])
+        display_saved_files(st.session_state['current_collection_id'])
 
     st.markdown('######')
     st.divider()
-    print(st.session_state["current_collection"])
-    st.button('Delete Collection', type="primary", use_container_width=True, on_click=delete_collection, args=(st.session_state["current_collection"],))
+    st.button('Delete Collection', type="primary", use_container_width=True, on_click=delete_collection, args=(st.session_state["current_collection_id"],))
