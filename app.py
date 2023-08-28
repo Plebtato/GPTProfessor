@@ -397,7 +397,7 @@ if not st.session_state['create_popup']:
             ('DaVinci', 'GPT-3.5', 'GPT-4'),
             help="Choose the language model to answer the question with.\n1. DaVinci: Low cost, least capable. Still good for general use.\n2. GPT-3.5: Moderate cost, moderate capability.\n3. GPT-4: Expensive, highly capable, requires special OpenAI access."
         )
-        submitted_ask = st.form_submit_button('Submit')
+        submitted_ask = st.form_submit_button('Submit', use_container_width=True)
         if not openai_api_key.startswith('sk-'):
             st.warning('Please enter your OpenAI API key!', icon='⚠')
         if not st.session_state['current_collection_id']:
@@ -410,7 +410,7 @@ if not st.session_state['create_popup']:
     st.subheader('Upload')
     with st.form("upload_form", clear_on_submit=True):
         file = st.file_uploader('Upload files:', type=["pdf", "docx", "csv", "txt"], label_visibility='collapsed')
-        submitted_doc = st.form_submit_button("Submit")
+        submitted_doc = st.form_submit_button("Submit", use_container_width=True)
         if not st.session_state['current_collection_id']:
             st.error('Error, invalid collection.', icon='⚠')
         if submitted_doc and file and st.session_state['current_collection_id']:
