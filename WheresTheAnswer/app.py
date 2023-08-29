@@ -142,6 +142,11 @@ if not st.session_state["create_popup"]:
                 )
 
     st.markdown("######")
+    st.subheader("Saved Files")
+    with st.expander("View List", expanded=True):
+        documents.display_saved_files(st.session_state["current_collection_id"])
+
+    st.markdown("######")
     st.subheader("Upload")
     with st.form("upload_form", clear_on_submit=True):
         file = st.file_uploader(
@@ -155,11 +160,6 @@ if not st.session_state["create_popup"]:
         if submitted_doc and file and st.session_state["current_collection_id"]:
             with st.spinner():
                 documents.upload_file(file, st.session_state["current_collection_id"])
-
-    st.markdown("######")
-    st.subheader("Saved Files")
-    with st.expander("", expanded=True):
-        documents.display_saved_files(st.session_state["current_collection_id"])
 
     st.markdown("######")
     st.divider()
