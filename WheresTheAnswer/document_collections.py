@@ -77,7 +77,13 @@ def create_collection(collection_name, collection_type):
             with open(doc_index_path, "w") as outfile:
                 json.dump(manual_collection_dict, outfile)
 
-        collections_list.append({"name": collection_name, "id": id})
+        elif collection_type == "Sync" or collection_type == "Code":
+            auto_collection_dict = {"path": ""}
+
+            with open(doc_index_path, "w") as outfile:
+                json.dump(auto_collection_dict, outfile)
+
+        collections_list.append({"name": collection_name, "id": id, "type": collection_type})
         add_collection_dict = {"collections": collections_list}
 
         with open(config.collections_path, "w") as outfile:

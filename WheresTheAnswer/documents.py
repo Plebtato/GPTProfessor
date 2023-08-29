@@ -90,6 +90,16 @@ def upload_file(file, collection):
                 json.dump(dictionary, outfile)
 
 
+def sync_folder(path, collection):
+    if os.path.isdir(path):
+        print('yeet')
+
+
+def sync_code_repo(path, collection):
+    if os.path.isdir(path):
+        print('yeet')
+
+
 def display_saved_files(collection):
     # Renders the saved files as a list with control buttons
 
@@ -108,30 +118,34 @@ def display_saved_files(collection):
 
         saved_docs = json_obj["saved_docs"]
 
-        for index, doc in enumerate(saved_docs):
-            col1, col2 = st.columns(2)
+        if not saved_docs:
+            st.write("This collection is empty.")
 
-            with col1:
-                st.markdown("######")
-                st.text(doc["source"])
+        else:
+            for index, doc in enumerate(saved_docs):
+                col1, col2 = st.columns(2)
 
-            with col2:
+                with col1:
+                    st.markdown("######")
+                    st.write(doc["source"])
 
-                def delete_doc():
-                    print("delete ids " + str(doc["ids"]))
-                    vectordb._collection.delete(ids=doc["ids"])
-                    print(vectordb._collection.count())
-                    copy_json = deepcopy(json_obj)
-                    for x in saved_docs:
-                        if x["ids"] == doc["ids"]:
-                            copy_json["saved_docs"].remove(x)
-                            break
-                    with open(doc_index_path, "w") as outfile:
-                        json.dump(copy_json, outfile)
+                with col2:
 
-                st.button(
-                    "Delete",
-                    key=str(collection) + "_" + str(index),
-                    on_click=delete_doc,
-                    use_container_width=True,
-                )
+                    def delete_doc():
+                        print("delete ids " + str(doc["ids"]))
+                        vectordb._collection.delete(ids=doc["ids"])
+                        print(vectordb._collection.count())
+                        copy_json = deepcopy(json_obj)
+                        for x in saved_docs:
+                            if x["ids"] == doc["ids"]:
+                                copy_json["saved_docs"].remove(x)
+                                break
+                        with open(doc_index_path, "w") as outfile:
+                            json.dump(copy_json, outfile)
+
+                    st.button(
+                        "Delete",
+                        key=str(collection) + "_" + str(index),
+                        on_click=delete_doc,
+                        use_container_width=True,
+                    )

@@ -56,10 +56,11 @@ if st.session_state["create_popup"]:
     new_collection_name = st.text_input("Name")
     new_collection_type = st.radio(
         "Type",
-        ["Manual", "Sync"],
+        ["Manual", "Sync", "Code"],
         captions=[
-            "Add and remove your documents manually.",
-            "Select a folder and automatically upload and sync.",
+            "Add and remove your documents manually. Supports PDF, DOCX, CSV, and TXT.",
+            "Select a folder to automatically upload and sync. Supports PDF, DOCX, CSV, and TXT.",
+            "Select a code repository to automatically upload and sync. Supports C++ and C# source code."
         ],
     )
     col1, col2 = st.columns(2)
@@ -107,24 +108,30 @@ if st.session_state["create_popup"]:
         st.error("Please enter a name for your collection.", icon="🚨")
 
 
-# COLLECTION INTERFACE
+# Q&A INTERFACE
 
 if not st.session_state["create_popup"]:
-    title = ""
+    collection_title = ""
+    collection_type = ""
     for collection in document_collections.get_collections():
         if collection["id"] == st.session_state["current_collection_id"]:
-            title = collection["name"]
+            collection_title = collection["name"]
+            collection_type = collection["type"]
             break
-    st.title(title)
+    st.title(collection_title)
 
     with st.form("ask_form"):
         text = st.text_area(
-            "Question:", placeholder="Ask me anything about your documents!"
+            "Question", placeholder="Ask me anything about your documents!"
         )
         model = st.radio(
             "Select Model",
             ("DaVinci", "GPT-3.5", "GPT-4"),
-            help="Choose the language model to answer the question with.\n1. DaVinci: Low cost, least capable. Still good for general use.\n2. GPT-3.5: Moderate cost, moderate capability.\n3. GPT-4: Expensive, highly capable, requires special OpenAI access.",
+            captions=[
+            "Low cost language model. Good for general use.",
+            "More expensive to run, but may provide better results.",
+            "Highly capable next-generation model. Requires special OpenAI access. Also hurts your wallet."
+            ]
         )
         submitted_ask = st.form_submit_button("Submit", use_container_width=True)
         if not config.openai_api_key.startswith("sk-"):
@@ -142,24 +149,35 @@ if not st.session_state["create_popup"]:
                 )
 
     st.markdown("######")
-    st.subheader("Saved Files")
-    with st.expander("View List", expanded=True):
-        documents.display_saved_files(st.session_state["current_collection_id"])
+    if collection_type == "Manual":
+        st.subheader("Upload")
+        with st.form("upload_form", clear_on_submit=False):
+            file = st.file_uploader(
+                "Upload files:",
+                type=["pdf", "docx", "csv", "txt"],
+                label_visibility="collapsed",
+            )
+            submitted_doc = st.form_submit_button("Submit", use_container_width=True)
+            if not st.session_state["current_collection_id"]:
+                st.error("Error, invalid collection.", icon="⚠")
+            if submitted_doc and file and st.session_state["current_collection_id"]:
+                with st.spinner():
+                    documents.upload_file(file, st.session_state["current_collection_id"])
 
-    st.markdown("######")
-    st.subheader("Upload")
-    with st.form("upload_form", clear_on_submit=True):
-        file = st.file_uploader(
-            "Upload files:",
-            type=["pdf", "docx", "csv", "txt"],
-            label_visibility="collapsed",
-        )
-        submitted_doc = st.form_submit_button("Submit", use_container_width=True)
-        if not st.session_state["current_collection_id"]:
-            st.error("Error, invalid collection.", icon="⚠")
-        if submitted_doc and file and st.session_state["current_collection_id"]:
-            with st.spinner():
-                documents.upload_file(file, st.session_state["current_collection_id"])
+        st.markdown("######")
+        st.subheader("Saved Files")
+        with st.expander("List", expanded=True):
+            documents.display_saved_files(st.session_state["current_collection_id"])
+    elif collection_type == "Sync":
+        st.subheader("Select Folder")
+        with st.form("code_select_form", clear_on_submit=True):
+            code_path = st.text_input("Folder Path")
+            submitted_code_path = st.form_submit_button("Submit", use_container_width=True)
+    elif collection_type == "Code":
+        st.subheader("Select Project")
+        with st.form("code_select_form", clear_on_submit=True):
+            code_path = st.text_input("Directory Path")
+            submitted_code_path = st.form_submit_button("Submit", use_container_width=True)
 
     st.markdown("######")
     st.divider()
