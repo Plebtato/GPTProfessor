@@ -4,4 +4,4 @@ Activate venv (Windows):
 .venv/scripts/activate.ps1
 
 Run:
-streamlit run app.py
+streamlit run WheresTheAnswer/app.py
