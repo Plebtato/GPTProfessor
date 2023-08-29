@@ -171,12 +171,12 @@ if not st.session_state["create_popup"]:
     elif collection_type == "Sync":
         st.subheader("Select Folder")
         with st.form("code_select_form", clear_on_submit=True):
-            code_path = st.text_input("Folder Path")
+            code_path = st.text_input("Folder Path", placeholder="C:\\Users\\Me\\Documents\\Course Notes")
             submitted_code_path = st.form_submit_button("Submit", use_container_width=True)
     elif collection_type == "Code":
         st.subheader("Select Project")
         with st.form("code_select_form", clear_on_submit=True):
-            code_path = st.text_input("Directory Path")
+            code_path = st.text_input("Directory Path", placeholder="C:\\Users\\Me\\Project_Repo")
             submitted_code_path = st.form_submit_button("Submit", use_container_width=True)
 
     st.markdown("######")
