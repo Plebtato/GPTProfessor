@@ -1,3 +1,4 @@
+import time
 import config
 import json
 import os
@@ -8,6 +9,8 @@ from langchain.vectorstores import Chroma
 from PyPDF2 import PdfReader
 from docx import Document
 import streamlit as st
+from langchain.document_loaders import TextLoader
+import tqdm
 
 
 def upload_file(file, collection):
@@ -40,6 +43,8 @@ def upload_file(file, collection):
 
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
         texts = text_splitter.split_text(input_docs)
+
+        # TODO: Split very large documents to avoid rate limit
 
         doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
         embeddings = OpenAIEmbeddings(openai_api_key=config.openai_api_key)
@@ -90,14 +95,52 @@ def upload_file(file, collection):
                 json.dump(dictionary, outfile)
 
 
+# needed for individual files?
+def chunks(lst, n):
+    # https://stackoverflow.com/a/312464/18903720
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
 def sync_folder(path, collection):
     if os.path.isdir(path):
         print('yeet')
 
 
 def sync_code_repo(path, collection):
+    print(path)
     if os.path.isdir(path):
-        print('yeet')
+        split_docs = []
+        
+        for dirpath, dirs, files in os.walk(path): 
+            for filename in files:
+                filename_with_path = os.path.join(dirpath, filename)
+                if filename_with_path.endswith((".cpp", ".hpp", ".h'", ".md")):
+                    print(filename_with_path)
+                    loader = TextLoader(filename_with_path, encoding="utf8")
+                    documents = loader.load()
+                    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+                    split_docs.extend(text_splitter.split_documents(documents))
+        
+        doc_chunks = chunks(split_docs, 50) # adjust based on your average character count per line
+        embeddings = OpenAIEmbeddings(openai_api_key=config.openai_api_key)
+        vectordb = None
+
+        for (index, chunk) in tqdm.tqdm(enumerate(doc_chunks)):
+            if index == 0:
+                vectordb = Chroma.from_documents(
+                    chunk,
+                    collection_name="db" + str(collection),
+                    persist_directory=config.db_path,
+                    embedding=embeddings,
+                )
+            else:
+                # time.sleep(60)
+                vectordb.add_documents(chunk)
+
+        
+        
+
 
 
 def display_saved_files(collection):

@@ -48,7 +48,7 @@ config.openai_api_key = st.sidebar.text_input(
 # CREATE INTERFACE
 
 if st.session_state["create_popup"]:
-    st.title("Create New Collection")
+    st.title("Create A New Collection")
 
     # with st.form('create_form'):
     show_name_in_use_err = False
@@ -56,11 +56,12 @@ if st.session_state["create_popup"]:
     new_collection_name = st.text_input("Name")
     new_collection_type = st.radio(
         "Type",
-        ["Manual", "Sync", "Code"],
+        ["Manual", "Sync", "Google Drive", "Code"],
         captions=[
             "Add and remove your documents manually. Supports PDF, DOCX, CSV, and TXT.",
-            "Select a folder to automatically upload and sync. Supports PDF, DOCX, CSV, and TXT.",
-            "Select a code repository to automatically upload and sync. Supports C++ and C# source code."
+            "Select a folder on your device to automatically upload and sync. Supports PDF, DOCX, CSV, and TXT.",
+            "Select a Google Drive folder to automatically upload and sync Google Docs and Google Sheets.",
+            "Select a local code repository to automatically upload and sync. Supports C++ and C# source code. WIP!"
         ],
     )
     col1, col2 = st.columns(2)
@@ -161,7 +162,7 @@ if not st.session_state["create_popup"]:
             if not st.session_state["current_collection_id"]:
                 st.error("Error, invalid collection.", icon="⚠")
             if submitted_doc and file and st.session_state["current_collection_id"]:
-                with st.spinner():
+                with st.spinner("This could take a while..."):
                     documents.upload_file(file, st.session_state["current_collection_id"])
 
         st.markdown("######")
@@ -178,6 +179,9 @@ if not st.session_state["create_popup"]:
         with st.form("code_select_form", clear_on_submit=True):
             code_path = st.text_input("Directory Path", placeholder="C:\\Users\\Me\\Project_Repo")
             submitted_code_path = st.form_submit_button("Submit", use_container_width=True)
+            if code_path and submitted_code_path and st.session_state["current_collection_id"]:
+                with st.spinner("This could take a while..."):
+                    documents.sync_code_repo(code_path, st.session_state["current_collection_id"])
 
     st.markdown("######")
     st.divider()
