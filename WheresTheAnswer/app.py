@@ -171,6 +171,7 @@ if not st.session_state["create_popup"]:
             if submitted_doc and file and st.session_state["current_collection_id"]:
                 with st.spinner("This could take a while..."):
                     documents.upload_file(file, st.session_state["current_collection_id"])
+                st.success('Done!')
 
         st.markdown("######")
         st.subheader("Saved Files")
@@ -180,8 +181,12 @@ if not st.session_state["create_popup"]:
     elif collection_type == "Sync":
         st.subheader("Select Folder")
         with st.form("code_select_form", clear_on_submit=False):
-            code_path = st.text_input("Folder Path", placeholder="C:\\Users\\Me\\Documents\\Course Notes", value=collection_path)
-            submitted_code_path = st.form_submit_button("Submit", use_container_width=True)
+            folder_path = st.text_input("Folder Path", placeholder="C:\\Users\\Me\\Documents\\Course Notes", value=collection_path)
+            submitted_folder_path = st.form_submit_button("Submit/Refresh", use_container_width=True)
+            if folder_path and submitted_folder_path and st.session_state["current_collection_id"]:
+                with st.spinner("This could take a while..."):
+                    documents.sync_folder(folder_path, st.session_state["current_collection_id"])
+                st.success('Done!')
 
     elif collection_type == "Google Drive":
         st.subheader("Select Google Drive Folder")
@@ -201,19 +206,21 @@ if not st.session_state["create_popup"]:
                      """)
             st.divider()
             drive_path = st.text_input("Google Drive Folder ID", placeholder="1yucgL9WGgWZdM1TOuKkeghlPizuzMYb5", value=collection_path)
-            submitted_drive_path = st.form_submit_button("Submit", use_container_width=True)
+            submitted_drive_path = st.form_submit_button("Submit/Refresh", use_container_width=True)
             if drive_path and submitted_drive_path and st.session_state["current_collection_id"]:
                 with st.spinner("This could take a while..."):
                     documents.sync_google_drive(drive_path, st.session_state["current_collection_id"])
+                st.success('Done!')
     
     elif collection_type == "Code":
         st.subheader("Select Project")
         with st.form("code_select_form", clear_on_submit=False):
             code_path = st.text_input("Directory Path", placeholder="C:\\Users\\Me\\Project_Repo", value=collection_path)
-            submitted_code_path = st.form_submit_button("Submit", use_container_width=True)
+            submitted_code_path = st.form_submit_button("Submit/Refresh", use_container_width=True)
             if code_path and submitted_code_path and st.session_state["current_collection_id"]:
                 with st.spinner("This could take a while..."):
                     documents.sync_code_repo(code_path, st.session_state["current_collection_id"])
+                st.success('Done!')
 
 
     st.markdown("######")
