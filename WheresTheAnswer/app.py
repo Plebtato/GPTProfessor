@@ -37,15 +37,12 @@ else:
     # Load collection info
     collection_title = ""
     collection_type = ""
-    collection_path = ""
     for collection in document_collections.get_collections():
         if collection["id"] == st.session_state["current_collection_id"]:
             collection_title = collection["name"]
             collection_type = collection["type"]
             break
-    if collection_type != "Manual":
-        collection_path = documents.get_path(st.session_state["current_collection_id"])
-    
+  
     st.title(collection_title)
 
     components.qa.ask_form()
@@ -55,8 +52,8 @@ else:
     if collection_type == "Manual":
         components.qa.manual_collection_update_form()
     else:
-        components.qa.path_collection_update_form(collection_type, collection_path)
-        components.qa.path_collection_reload_form(collection_type, collection_path)
+        components.qa.path_collection_update_form(collection_type)
+        components.qa.path_collection_reload_form(collection_type)
 
     st.markdown("######")
 

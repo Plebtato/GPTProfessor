@@ -57,7 +57,8 @@ def manual_collection_update_form():
         documents.display_saved_files(st.session_state["current_collection_id"])
 
 
-def path_collection_update_form(type, current_collection_path):
+def path_collection_update_form(type):
+    current_collection_path = documents.get_path(st.session_state["current_collection_id"])
     if type == "Sync":
         st.subheader("Change Folder") if current_collection_path else st.subheader("Select Folder")
         path_placeholder = "C:\\Users\\Me\\Documents\\Course Notes"
@@ -103,7 +104,8 @@ def path_collection_update_form(type, current_collection_path):
             st.success('Done!')
 
 
-def path_collection_reload_form(type, current_collection_path):
+def path_collection_reload_form(type):
+    current_collection_path = documents.get_path(st.session_state["current_collection_id"])
     if current_collection_path:
         if type == "Sync":
             st.subheader("Reload Folder")

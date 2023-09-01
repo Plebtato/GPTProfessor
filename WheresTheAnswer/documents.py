@@ -181,26 +181,6 @@ def sync_code_repo(path, collection):
         create_and_load_collection(split_docs, collection)
         write_path(path, collection)
 
-        # doc_chunks = chunks(split_docs, 50) # adjust based on your average character count per line
-        # embeddings = OpenAIEmbeddings(openai_api_key=config.openai_api_key)
-        # vectordb = None
-
-        # for (index, chunk) in tqdm.tqdm(enumerate(doc_chunks)):
-        #     if index == 0:
-        #         vectordb = Chroma.from_documents(
-        #             chunk,
-        #             collection_name="db" + str(collection),
-        #             persist_directory=config.db_path,
-        #             embedding=embeddings,
-        #         )
-        #     else:
-        #         # time.sleep(60)
-        #         vectordb.add_documents(chunk)
-
-        
-        
-
-
 
 def display_saved_files(collection):
     # Renders the saved files as a list with control buttons
