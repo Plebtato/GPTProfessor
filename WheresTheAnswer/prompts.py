@@ -1,9 +1,10 @@
 from langchain.prompts import PromptTemplate
 
 
-qa_chain_template = """Use the following sources to answer the question at the end. Do not include any other info, just info from the listed sources.
+qa_chain_template = """Use the following sources to answer the question at the end. Only include info that is found in the listed sources.
 If you don't know the answer, just say sorry and that you couldn't find any info about it, don't try to make up an answer. Don't mention the sources itself, just state the info.
 
+Sources:
 {summaries}
 Question: {question}
 """
