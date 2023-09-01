@@ -112,13 +112,19 @@ if st.session_state["create_popup"]:
 # Q&A INTERFACE
 
 if not st.session_state["create_popup"]:
+    
+    # Load collection info
     collection_title = ""
     collection_type = ""
+    collection_path = ""
     for collection in document_collections.get_collections():
         if collection["id"] == st.session_state["current_collection_id"]:
             collection_title = collection["name"]
             collection_type = collection["type"]
             break
+    if collection_type != "Manual":
+        collection_path = documents.get_path(st.session_state["current_collection_id"])
+    
     st.title(collection_title)
 
     with st.form("ask_form"):
@@ -150,6 +156,7 @@ if not st.session_state["create_popup"]:
                 )
 
     st.markdown("######")
+    
     if collection_type == "Manual":
         st.subheader("Upload")
         with st.form("upload_form", clear_on_submit=False):
@@ -169,19 +176,45 @@ if not st.session_state["create_popup"]:
         st.subheader("Saved Files")
         with st.expander("List", expanded=True):
             documents.display_saved_files(st.session_state["current_collection_id"])
+    
     elif collection_type == "Sync":
         st.subheader("Select Folder")
-        with st.form("code_select_form", clear_on_submit=True):
-            code_path = st.text_input("Folder Path", placeholder="C:\\Users\\Me\\Documents\\Course Notes")
+        with st.form("code_select_form", clear_on_submit=False):
+            code_path = st.text_input("Folder Path", placeholder="C:\\Users\\Me\\Documents\\Course Notes", value=collection_path)
             submitted_code_path = st.form_submit_button("Submit", use_container_width=True)
+
+    elif collection_type == "Google Drive":
+        st.subheader("Select Google Drive Folder")
+        with st.form("code_select_form", clear_on_submit=False):
+            st.subheader("Requirements")
+            st.write("""
+                     1. [Create a Google Cloud project or use an existing project.](https://console.cloud.google.com/flows/enableapi?apiid=drive.googleapis.com)\n
+                     2. [Enable the Google Drive API.](https://developers.google.com/drive/api/quickstart/python#authorize_credentials_for_a_desktop_application)\n
+                     3. Authorize credentials for desktop app.
+                     """)
+            st.divider()
+            st.subheader("Selection")
+            st.write("""
+                     You can get the ID of a Google Drive folder from the last part of the URL. For example:\n
+                     URL: https://drive.google.com/drive/u/0/folders/1yucgL9WGgWZdM1TOuKkeghlPizuzMYb5\n
+                     ID: 1yucgL9WGgWZdM1TOuKkeghlPizuzMYb5
+                     """)
+            st.divider()
+            drive_path = st.text_input("Google Drive Folder ID", placeholder="1yucgL9WGgWZdM1TOuKkeghlPizuzMYb5", value=collection_path)
+            submitted_drive_path = st.form_submit_button("Submit", use_container_width=True)
+            if drive_path and submitted_drive_path and st.session_state["current_collection_id"]:
+                with st.spinner("This could take a while..."):
+                    documents.sync_google_drive(drive_path, st.session_state["current_collection_id"])
+    
     elif collection_type == "Code":
         st.subheader("Select Project")
-        with st.form("code_select_form", clear_on_submit=True):
-            code_path = st.text_input("Directory Path", placeholder="C:\\Users\\Me\\Project_Repo")
+        with st.form("code_select_form", clear_on_submit=False):
+            code_path = st.text_input("Directory Path", placeholder="C:\\Users\\Me\\Project_Repo", value=collection_path)
             submitted_code_path = st.form_submit_button("Submit", use_container_width=True)
             if code_path and submitted_code_path and st.session_state["current_collection_id"]:
                 with st.spinner("This could take a while..."):
                     documents.sync_code_repo(code_path, st.session_state["current_collection_id"])
+
 
     st.markdown("######")
     st.divider()
