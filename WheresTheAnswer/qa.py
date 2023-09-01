@@ -52,7 +52,7 @@ def generate_response(query, model, collection):
         query += "?"
 
     result = qa_chain({"question": query}, return_only_outputs=True)
-    print(result)
+    # print(result)
     sources = []
     for doc in result["source_documents"]:
         if doc.metadata["source"] not in sources:
