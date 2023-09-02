@@ -77,7 +77,7 @@ def create_collection(collection_name, collection_type):
             with open(doc_index_path, "w") as outfile:
                 json.dump(manual_collection_dict, outfile)
 
-        elif collection_type == "Sync" or collection_type == "Code":
+        else:
             auto_collection_dict = {"path": ""}
 
             with open(doc_index_path, "w") as outfile:

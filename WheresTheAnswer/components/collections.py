@@ -1,6 +1,7 @@
 import streamlit as st
 import document_collections
 
+
 def create_collection_form():
     st.title("Create A New Collection")
 
@@ -10,12 +11,14 @@ def create_collection_form():
     new_collection_name = st.text_input("Name")
     new_collection_type = st.radio(
         "Type",
-        ["Manual", "Sync", "Google Drive", "Code"],
+        ["Manual","Sync", "Google Drive", "Code"],
+        # ["Manual","Sync", "Google Drive", "Code", "Confluence"],
         captions=[
             "Add and remove your documents manually. Supports PDF, DOCX, CSV, and TXT.",
             "Select a folder on your device to automatically upload and sync. Supports PDF, DOCX, CSV, and TXT.",
             "Select a Google Drive folder to automatically upload and sync Google Docs and Google Sheets.",
-            "Select a local code repository to automatically upload and sync. Supports C++ and C# source code. WIP!"
+            "Select a local code repository to automatically upload and sync. Supports C++ and C# source code. WIP!",
+            # "Load Confluence pages.",
         ],
     )
     col1, col2 = st.columns(2)

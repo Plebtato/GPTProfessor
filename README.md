@@ -5,3 +5,17 @@ Activate venv (Windows):
 
 Run:
 streamlit run WheresTheAnswer/app.py
+
+Packages:
+streamlit
+langchain
+openai
+tiktoken
+chromadb
+pypdf
+pypdf2
+python-docx
+docx2txt
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib

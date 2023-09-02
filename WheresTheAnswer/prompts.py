@@ -1,7 +1,7 @@
 from langchain.prompts import PromptTemplate
 
 
-qa_chain_template = """Use the following sources to answer the question at the end. Only include info that is found in the listed sources.
+qa_chain_template = """Use the following sources to answer the question at the end. Only include info that is found in the listed sources, but if something is obviously wrong, don't include it.
 If you don't know the answer, just say sorry and that you couldn't find any info about it, don't try to make up an answer. Don't mention the sources itself, just state the info.
 
 Sources:
