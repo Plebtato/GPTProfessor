@@ -11,6 +11,9 @@ from docx import Document
 import streamlit as st
 from langchain.document_loaders import TextLoader
 from langchain.document_loaders import GoogleDriveLoader
+from langchain.document_loaders import PyPDFLoader
+from langchain.document_loaders.csv_loader import CSVLoader
+from langchain.document_loaders import Docx2txtLoader
 import tqdm
 
 
@@ -147,7 +150,28 @@ def get_path(collection):
 
 def sync_folder(path, collection):
     if os.path.isdir(path):
-        print('WIP lol')
+        split_docs = []
+        
+        for dirpath, dirs, files in os.walk(path): 
+            for filename in files:
+                filename_with_path = os.path.join(dirpath, filename)
+                if filename_with_path.endswith(".pdf"):
+                    loader = PyPDFLoader(filename_with_path)
+                elif filename_with_path.endswith(".txt"):
+                    loader = TextLoader(filename_with_path, encoding="utf8")
+                elif filename_with_path.endswith(".csv"):
+                    loader = CSVLoader(filename_with_path, encoding="utf8")
+                elif filename_with_path.endswith(".docx"):
+                    loader = Docx2txtLoader(filename_with_path)
+
+                if filename_with_path.endswith((".pdf", ".txt", ".csv", ".docx")):
+                    documents = loader.load()
+                    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+                    split_docs.extend(text_splitter.split_documents(documents))
+        
+        if split_docs:     
+            create_and_load_collection(split_docs, collection)
+            write_path(path, collection)
 
 
 def sync_google_drive(folder_id, collection):
@@ -171,15 +195,15 @@ def sync_code_repo(path, collection):
         for dirpath, dirs, files in os.walk(path): 
             for filename in files:
                 filename_with_path = os.path.join(dirpath, filename)
-                if filename_with_path.endswith((".cpp", ".hpp", ".h'", ".md")):
-                    print(filename_with_path)
+                if filename_with_path.endswith((".cpp", ".hpp", ".h", ".md")):
                     loader = TextLoader(filename_with_path, encoding="utf8")
                     documents = loader.load()
                     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
                     split_docs.extend(text_splitter.split_documents(documents))
         
-        create_and_load_collection(split_docs, collection)
-        write_path(path, collection)
+        if split_docs:   
+            create_and_load_collection(split_docs, collection)
+            write_path(path, collection)
 
 
 def display_saved_files(collection):
