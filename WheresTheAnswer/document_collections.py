@@ -100,9 +100,9 @@ def delete_collection(collection):
 
         os.remove(doc_index_path)
         collections_list = get_collections()
-        for x in collections_list:
-            if x["id"] == collection:
-                collections_list.remove(x)
+        for collection_data in collections_list:
+            if collection_data["id"] == collection:
+                collections_list.remove(collection_data)
                 break
 
         add_collection_dict = {"collections": collections_list}

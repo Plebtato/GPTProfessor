@@ -94,12 +94,14 @@ def path_collection_update_form(type):
         
         if path and submitted_path and st.session_state["current_collection_id"]:
             with st.spinner("This could take a while..."):
+                reset = True if current_collection_path else False
+
                 if type == "Sync":
-                    documents.sync_folder(path, st.session_state["current_collection_id"])
+                    documents.sync_folder(path, st.session_state["current_collection_id"], reset)
                 elif type == "Google Drive":
                     documents.sync_google_drive(path, st.session_state["current_collection_id"])
                 elif type == "Code":
-                    documents.sync_code_repo(path, st.session_state["current_collection_id"])
+                    documents.sync_code_repo(path, st.session_state["current_collection_id"], reset)
                 
             st.success('Done!')
 
@@ -120,7 +122,7 @@ def path_collection_reload_form(type):
         with st.form("reload_form", clear_on_submit=False):
             st.write(description)
             st.write(current_collection_path)
-            submitted_path = st.form_submit_button("Submit", use_container_width=True)
+            submitted_path = st.form_submit_button("Reload", use_container_width=True)
             
             if submitted_path and st.session_state["current_collection_id"]:
                 with st.spinner("This could take a while..."):
@@ -132,6 +134,10 @@ def path_collection_reload_form(type):
                         documents.sync_code_repo(current_collection_path, st.session_state["current_collection_id"])
                     
                 st.success('Done!')
+        
+        if type == "Sync":
+            with st.expander("View File List", expanded=False):
+                documents.display_saved_files(st.session_state["current_collection_id"], False)
 
 
 def delete_collection_button():

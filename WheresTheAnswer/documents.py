@@ -106,7 +106,7 @@ def chunks(lst, n):
         yield lst[i:i + n]
 
 
-def create_and_load_collection(docs, collection, delete_old = True):
+def create_and_load_collection(docs, collection, delete_old = False):
     doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
     embeddings = OpenAIEmbeddings(openai_api_key=config.openai_api_key)
     vectordb = None
@@ -131,7 +131,6 @@ def create_and_load_collection(docs, collection, delete_old = True):
 
     saved_docs = json_obj["saved_docs"]
     last_id = json_obj["last_id"]
-    last_id = 0
     ids = [str(i) for i in range(last_id, last_id + len(docs))]
 
     # Split by chunks to avoid token limit
@@ -193,30 +192,102 @@ def get_path(collection):
         return ""
 
 
-def sync_folder(path, collection):
+def should_update_source(source_path, collection):
+    # checks if source is not in collection or has been modified
+    doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
+    
+    if os.path.isfile(doc_index_path):
+        with open(doc_index_path, "r") as openfile:
+            json_obj = json.load(openfile)
+        
+        for doc in json_obj["saved_docs"]:
+            if source_path == doc["source"]:
+                if datetime.datetime.fromtimestamp(os.path.getmtime(source_path)) < datetime.datetime.fromisoformat(doc["last_updated"]):
+                    return False
+    return True
+
+
+def delete_source_if_existing(source_path, collection):
+    """
+    Deletes the source if it is in the collection already
+    """
+    doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
+    embeddings = OpenAIEmbeddings(openai_api_key=config.openai_api_key)
+    vectordb = Chroma(
+        "db" + str(collection),
+        persist_directory=config.db_path,
+        embedding_function=embeddings,
+    )
+    
+    if os.path.isfile(doc_index_path):
+        with open(doc_index_path, "r") as openfile:
+            json_obj = json.load(openfile)
+        
+        for source in json_obj["saved_docs"]:
+            if source_path == source["source"]:
+                print("delete ids " + str(source["ids"]))
+                vectordb._collection.delete(ids=source["ids"])
+                print(vectordb._collection.count())
+                copy_json = deepcopy(json_obj)
+                copy_json["saved_docs"].remove(source)
+
+                with open(doc_index_path, "w") as outfile:
+                    json.dump(copy_json, outfile)
+
+
+def clear_removed_sources(collection):
+    """
+    Clears sources that no longer exist in the directory
+    """
+    doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
+    embeddings = OpenAIEmbeddings(openai_api_key=config.openai_api_key)
+    vectordb = Chroma(
+        "db" + str(collection),
+        persist_directory=config.db_path,
+        embedding_function=embeddings,
+    )
+    
+    if os.path.isfile(doc_index_path):
+        with open(doc_index_path, "r") as openfile:
+            json_obj = json.load(openfile)
+        for source in json_obj["saved_docs"]:
+            if not os.path.isfile(source["source"]):
+                print("delete ids " + str(source["ids"]))
+                vectordb._collection.delete(ids=source["ids"])
+                print(vectordb._collection.count())
+                copy_json = deepcopy(json_obj)
+                copy_json["saved_docs"].remove(source)
+
+                with open(doc_index_path, "w") as outfile:
+                    json.dump(copy_json, outfile)
+       
+
+def sync_folder(path, collection, reset = False):
     if os.path.isdir(path):
+        clear_removed_sources(collection)
         split_docs = []
         
         for dirpath, dirs, files in os.walk(path): 
             for filename in files:
                 filename_with_path = os.path.join(dirpath, filename)
-                if filename_with_path.endswith(".pdf"):
-                    loader = PyPDFLoader(filename_with_path)
-                elif filename_with_path.endswith(".txt"):
-                    loader = TextLoader(filename_with_path, encoding="utf8")
-                elif filename_with_path.endswith(".csv"):
-                    loader = CSVLoader(filename_with_path, encoding="utf8")
-                elif filename_with_path.endswith(".docx"):
-                    loader = Docx2txtLoader(filename_with_path)
+                if should_update_source(filename_with_path, collection):
+                    if filename_with_path.endswith(".pdf"):
+                        loader = PyPDFLoader(filename_with_path)
+                    elif filename_with_path.endswith(".txt"):
+                        loader = TextLoader(filename_with_path, encoding="utf8")
+                    elif filename_with_path.endswith(".csv"):
+                        loader = CSVLoader(filename_with_path, encoding="utf8")
+                    elif filename_with_path.endswith(".docx"):
+                        loader = Docx2txtLoader(filename_with_path)
 
-                if filename_with_path.endswith((".pdf", ".txt", ".csv", ".docx")):
-                    documents = loader.load()
-                    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-                    split_docs.extend(text_splitter.split_documents(documents))
+                    if filename_with_path.endswith((".pdf", ".txt", ".csv", ".docx")):
+                        delete_source_if_existing(filename_with_path, collection)
+                        documents = loader.load()
+                        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+                        split_docs.extend(text_splitter.split_documents(documents))
         
-        if split_docs:     
-            create_and_load_collection(split_docs, collection)
-            write_path(path, collection)
+        create_and_load_collection(split_docs, collection, reset)
+        write_path(path, collection)
 
 
 def sync_google_drive(folder_id, collection):
@@ -233,25 +304,27 @@ def sync_google_drive(folder_id, collection):
         write_path(folder_id, collection)
 
 
-def sync_code_repo(path, collection):
+def sync_code_repo(path, collection, reset = False):
     if os.path.isdir(path):
+        clear_removed_sources(collection)
         split_docs = []
         
         for dirpath, dirs, files in os.walk(path): 
             for filename in files:
                 filename_with_path = os.path.join(dirpath, filename)
-                if filename_with_path.endswith((".cpp", ".hpp", ".h", ".md")):
-                    loader = TextLoader(filename_with_path, encoding="utf8")
-                    documents = loader.load()
-                    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-                    split_docs.extend(text_splitter.split_documents(documents))
+                if should_update_source(filename_with_path, collection):
+                    if filename_with_path.endswith((".cpp", ".hpp", ".h", ".md")):
+                        delete_source_if_existing(filename_with_path, collection)
+                        loader = TextLoader(filename_with_path, encoding="utf8")
+                        documents = loader.load()
+                        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+                        split_docs.extend(text_splitter.split_documents(documents))
         
-        if split_docs:   
-            create_and_load_collection(split_docs, collection)
-            write_path(path, collection)
+        create_and_load_collection(split_docs, collection, reset)
+        write_path(path, collection)
 
 
-def display_saved_files(collection):
+def display_saved_files(collection, show_delete = True):
     # Renders the saved files as a list with control buttons
 
     doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
@@ -273,30 +346,33 @@ def display_saved_files(collection):
             st.write("This collection is empty.")
 
         else:
-            for index, doc in enumerate(saved_docs):
-                col1, col2 = st.columns(2)
+            for index, source in enumerate(saved_docs):
+                if show_delete:
+                    col1, col2 = st.columns(2)
 
-                with col1:
+                    with col1:
+                        st.markdown("######")
+                        st.write(source["source"])
+
+                    with col2:
+                            def delete_source():
+                                print("delete ids " + str(source["ids"]))
+                                vectordb._collection.delete(ids=source["ids"])
+                                print(vectordb._collection.count())
+                                copy_json = deepcopy(json_obj)
+                                for doc_data in saved_docs:
+                                    if doc_data["ids"] == source["ids"]:
+                                        copy_json["saved_docs"].remove(doc_data)
+                                        break
+                                with open(doc_index_path, "w") as outfile:
+                                    json.dump(copy_json, outfile)
+
+                            st.button(
+                                "Delete",
+                                key=str(collection) + "_" + str(index),
+                                on_click=delete_source,
+                                use_container_width=True,
+                            )
+                else:
                     st.markdown("######")
-                    st.write(doc["source"])
-
-                with col2:
-
-                    def delete_doc():
-                        print("delete ids " + str(doc["ids"]))
-                        vectordb._collection.delete(ids=doc["ids"])
-                        print(vectordb._collection.count())
-                        copy_json = deepcopy(json_obj)
-                        for x in saved_docs:
-                            if x["ids"] == doc["ids"]:
-                                copy_json["saved_docs"].remove(x)
-                                break
-                        with open(doc_index_path, "w") as outfile:
-                            json.dump(copy_json, outfile)
-
-                    st.button(
-                        "Delete",
-                        key=str(collection) + "_" + str(index),
-                        on_click=delete_doc,
-                        use_container_width=True,
-                    )
+                    st.write(source["source"])
