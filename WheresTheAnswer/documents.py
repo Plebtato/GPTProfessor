@@ -106,9 +106,11 @@ def chunks(lst, n):
 
 
 def create_and_load_collection(docs, collection, delete_old = True):
-    doc_chunks = chunks(docs, 50) # adjust based on average character count per line
+    doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
     embeddings = OpenAIEmbeddings(openai_api_key=config.openai_api_key)
     vectordb = None
+    
+    # remove old db if needed
     if delete_old:
         vectordb = Chroma(
             "db" + str(collection),
@@ -116,25 +118,66 @@ def create_and_load_collection(docs, collection, delete_old = True):
             embedding_function=embeddings,
         )
         vectordb.delete_collection()
+        
+        collection_dict = {"path": "", "last_id": 0, "saved_docs": []}
+        with open(doc_index_path, "w") as outfile:
+            json.dump(collection_dict, outfile)
+    
+    # Get available db ids
+    with open(doc_index_path, "r") as openfile:
+        json_obj = json.load(openfile)
 
-    for (index, chunk) in tqdm.tqdm(enumerate(doc_chunks)):
+    saved_docs = json_obj["saved_docs"]
+    last_id = json_obj["last_id"]
+    last_id = 0
+    ids = [str(i) for i in range(last_id, last_id + len(docs))]
+
+    # Split by chunks to avoid token limit
+    doc_chunks = chunks(docs, 50) # adjust based on average character count per line
+    chunk_ids = chunks(ids, 50)
+
+    # Load vector db
+    for index, (chunk, chunk_id) in tqdm.tqdm(enumerate(zip(doc_chunks, chunk_ids))):
         if index == 0:
             vectordb = Chroma.from_documents(
                 chunk,
                 collection_name="db" + str(collection),
                 persist_directory=config.db_path,
                 embedding=embeddings,
+                ids=chunk_id
             )
         else:
-            vectordb.add_documents(chunk)
+            vectordb.add_documents(chunk, ids=chunk_id)
+    
+    # Create and load source list
+    sources = []
+    for doc in docs:
+        if doc.metadata["source"] not in sources:
+            sources.append(doc.metadata["source"])
+
+    for source in sources:
+        source_ids = []
+        for index, (doc, doc_id) in enumerate(zip(docs, ids)):
+            if doc.metadata["source"] == source:
+                source_ids.append(doc_id)
+
+        saved_docs.append({"source": source, "ids": source_ids})
+    
+    dictionary = {"last_id": last_id + len(docs), "saved_docs": saved_docs}
+    with open(doc_index_path, "w") as outfile:
+        json.dump(dictionary, outfile)
 
 
 def write_path(path, collection):
     doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
-    collection_dict = {"path": path}
+
+    with open(doc_index_path, "r") as openfile:
+        json_obj = json.load(openfile)
+
+    json_obj["path"] = path
 
     with open(doc_index_path, "w") as outfile:
-        json.dump(collection_dict, outfile)
+        json.dump(json_obj, outfile)
 
 
 def get_path(collection):

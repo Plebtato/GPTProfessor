@@ -71,17 +71,10 @@ def create_collection(collection_name, collection_type):
         print("Create collection: " + collection_name)
         doc_index_path = os.path.join("data", "doc_index", str(id) + ".json")
 
-        if collection_type == "Manual":
-            manual_collection_dict = {"last_id": 0, "saved_docs": []}
+        collection_dict = {"path": "", "last_id": 0, "saved_docs": []}
 
-            with open(doc_index_path, "w") as outfile:
-                json.dump(manual_collection_dict, outfile)
-
-        else:
-            auto_collection_dict = {"path": ""}
-
-            with open(doc_index_path, "w") as outfile:
-                json.dump(auto_collection_dict, outfile)
+        with open(doc_index_path, "w") as outfile:
+            json.dump(collection_dict, outfile)
 
         collections_list.append({"name": collection_name, "id": id, "type": collection_type})
         add_collection_dict = {"collections": collections_list}
