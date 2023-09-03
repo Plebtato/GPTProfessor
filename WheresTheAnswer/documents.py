@@ -15,6 +15,7 @@ from langchain.document_loaders import PyPDFLoader
 from langchain.document_loaders.csv_loader import CSVLoader
 from langchain.document_loaders import Docx2txtLoader
 import tqdm
+import datetime
 
 
 def upload_file(file, collection):
@@ -109,6 +110,7 @@ def create_and_load_collection(docs, collection, delete_old = True):
     doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
     embeddings = OpenAIEmbeddings(openai_api_key=config.openai_api_key)
     vectordb = None
+    time = datetime.datetime.now().isoformat()
     
     # remove old db if needed
     if delete_old:
@@ -161,7 +163,7 @@ def create_and_load_collection(docs, collection, delete_old = True):
             if doc.metadata["source"] == source:
                 source_ids.append(doc_id)
 
-        saved_docs.append({"source": source, "ids": source_ids})
+        saved_docs.append({"source": source, "ids": source_ids, "last_updated": time})
     
     dictionary = {"last_id": last_id + len(docs), "saved_docs": saved_docs}
     with open(doc_index_path, "w") as outfile:
