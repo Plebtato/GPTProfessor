@@ -46,7 +46,7 @@ def upload_file(file, collection):
 
         # TODO: PPT
 
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=config.character_splitter_chunk_size, chunk_overlap=config.character_splitter_chunk_overlap)
         texts = text_splitter.split_text(input_docs)
 
         # TODO: Split very large documents to avoid rate limit
@@ -75,25 +75,6 @@ def upload_file(file, collection):
             saved_docs = json_obj["saved_docs"]
             saved_docs.append({"source": file.name, "ids": ids})
             dictionary = {"last_id": last_id + len(texts), "saved_docs": saved_docs}
-
-            with open(doc_index_path, "w") as outfile:
-                json.dump(dictionary, outfile)
-
-        else:
-            last_id = 0
-            ids = [str(i) for i in range(last_id, last_id + len(texts))]
-            metadata = []
-
-            for text in texts:
-                metadata.append({"source": file.name})
-
-            vectordb.add_texts(texts, metadatas=metadata, ids=ids)
-            print("Embedding query done")
-
-            dictionary = {
-                "last_id": last_id + len(texts),
-                "saved_docs": [{"source": file.name, "ids": ids}],
-            }
 
             with open(doc_index_path, "w") as outfile:
                 json.dump(dictionary, outfile)
@@ -283,7 +264,7 @@ def sync_folder(path, collection, reset = False):
                     if filename_with_path.endswith((".pdf", ".txt", ".csv", ".docx")):
                         delete_source_if_existing(filename_with_path, collection)
                         documents = loader.load()
-                        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+                        text_splitter = RecursiveCharacterTextSplitter(chunk_size=config.character_splitter_chunk_size, chunk_overlap=config.character_splitter_chunk_overlap)
                         split_docs.extend(text_splitter.split_documents(documents))
         
         create_and_load_collection(split_docs, collection, reset)
@@ -298,7 +279,7 @@ def sync_google_drive(folder_id, collection):
     documents = loader.load()
 
     if documents:
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=config.character_splitter_chunk_size, chunk_overlap=config.character_splitter_chunk_overlap)
         split_docs = text_splitter.split_documents(documents)
         create_and_load_collection(split_docs, collection)
         write_path(folder_id, collection)
@@ -317,7 +298,7 @@ def sync_code_repo(path, collection, reset = False):
                         delete_source_if_existing(filename_with_path, collection)
                         loader = TextLoader(filename_with_path, encoding="utf8")
                         documents = loader.load()
-                        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+                        text_splitter = RecursiveCharacterTextSplitter(chunk_size=config.character_splitter_chunk_size, chunk_overlap=config.character_splitter_chunk_overlap)
                         split_docs.extend(text_splitter.split_documents(documents))
         
         create_and_load_collection(split_docs, collection, reset)

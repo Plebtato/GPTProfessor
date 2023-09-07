@@ -5,6 +5,8 @@ from langchain.chains import RetrievalQAWithSourcesChain
 from langchain.chains.qa_with_sources import load_qa_with_sources_chain
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.retrievers.multi_query import MultiQueryRetriever
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import LLMChainFilter
 from langchain.vectorstores import Chroma
 import prompts
 
@@ -26,13 +28,14 @@ def generate_response(query, model, collection):
         persist_directory=config.db_path,
         embedding_function=embeddings,
     )
-
     llm = OpenAI(
-        temperature=0.2, openai_api_key=config.openai_api_key, model_name=model_name
+        temperature=0.3, openai_api_key=config.openai_api_key, model_name=model_name
     )
-    llm_retriever = MultiQueryRetriever.from_llm(
-        retriever=vectordb.as_retriever(search_kwargs={"k": 8}), llm=llm
-    )
+    compressor = LLMChainFilter.from_llm(llm)
+    compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=vectordb.as_retriever(search_kwargs={"k": 16}))
+    # llm_retriever = MultiQueryRetriever.from_llm(
+    #     retriever=vectordb.as_retriever(search_kwargs={"k": 16}), llm=llm
+    # )
     load_chain = load_qa_with_sources_chain(
         llm=llm,
         chain_type="stuff",
@@ -41,7 +44,7 @@ def generate_response(query, model, collection):
     )
     qa_chain = RetrievalQAWithSourcesChain(
         combine_documents_chain=load_chain,
-        retriever=llm_retriever,
+        retriever=compression_retriever,
         reduce_k_below_max_tokens=True,
         max_tokens_limit=max_tokens_limit,
         return_source_documents=True,
@@ -52,9 +55,9 @@ def generate_response(query, model, collection):
         query += "?"
 
     result = qa_chain({"question": query}, return_only_outputs=True)
-    # print(result)
     sources = []
     for doc in result["source_documents"]:
+        print("\n\n" + str(doc))
         if doc.metadata["source"] not in sources:
             sources.append(doc.metadata["source"])
 
@@ -70,4 +73,4 @@ def generate_response(query, model, collection):
         source_output = ""
 
     st.info(result["answer"] + source_output)
-    print("LLM query done")
+    print("\nLLM query done")

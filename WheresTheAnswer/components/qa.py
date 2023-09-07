@@ -8,7 +8,7 @@ import document_collections
 def ask_form():
     with st.form("ask_form"):
         text = st.text_area(
-            "Question", placeholder="Ask me anything about your documents!"
+            "Question", placeholder="Ask me anything about your documents! More specific questions work better."
         )
         model = st.radio(
             "Select Model",
