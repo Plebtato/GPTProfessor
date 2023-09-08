@@ -3,9 +3,11 @@ from langchain.prompts import PromptTemplate
 
 qa_chain_template = """
 Use the following sources to answer the question at the end.
-Only include info that is found in the listed sources, but if something is obviously wrong, don't include it.
-Make sure to incude all relevant info, but keep your answer concise.
-If you don't know the answer, just say sorry and that you couldn't find any info about it.
+Only include info that is found in the listed sources and is relevant to the question.
+Do not include info from the sources that is obviously incorrect, as it is likely an error.
+Make sure to incude all relevant info from the sources, but keep your answer concise.
+If you find a variety of info, please order them from most relevant to least.
+If you cannot find relevant info, just say sorry and that you couldn't find any info about it, don't try to make up an answer.
 You do not need to summarize your answer.
 
 Sources:
