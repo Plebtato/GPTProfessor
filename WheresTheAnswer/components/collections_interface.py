@@ -1,5 +1,5 @@
 import streamlit as st
-import document_collections
+import manage_collections
 
 
 def create_collection_form():
@@ -23,18 +23,18 @@ def create_collection_form():
     )
     col1, col2 = st.columns(2)
 
-    if document_collections.get_collections():
+    if manage_collections.get_collections():
         with col1:
             if st.button(
                 "Create",
                 type="primary",
                 use_container_width=True,
-                on_click=document_collections.create_collection,
+                on_click=manage_collections.create_collection,
                 args=(new_collection_name, new_collection_type),
             ):
                 if not new_collection_name:
                     show_missing_name_err = True
-                elif document_collections.validate_collection_name(new_collection_name):
+                elif manage_collections.validate_collection_name(new_collection_name):
                     show_name_in_use_err = False
                     show_missing_name_err = False
                 else:
@@ -43,14 +43,14 @@ def create_collection_form():
             st.button(
                 "Cancel",
                 use_container_width=True,
-                on_click=document_collections.close_popup,
+                on_click=close_popup,
             )
     else:
         if st.button(
             "Create",
             type="primary",
             use_container_width=True,
-            on_click=document_collections.create_collection,
+            on_click=manage_collections.create_collection,
             args=(new_collection_name, new_collection_type),
         ):
             if not new_collection_name:
@@ -64,3 +64,13 @@ def create_collection_form():
 
     if show_missing_name_err:
         st.error("Please enter a name for your collection.", icon="🚨")
+
+
+def open_popup(open=True):
+    if open:
+        st.session_state["create_popup"] = True
+
+
+def close_popup(close=True):
+    if close:
+        st.session_state["create_popup"] = False

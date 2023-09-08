@@ -5,6 +5,7 @@ import os
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores import Chroma
 from pathlib import Path
+import components.collections_interface
 
 
 def get_collections():
@@ -32,16 +33,6 @@ def display_collections():
             on_click=click,
             args=(collection,),
         )
-
-
-def open_popup(open=True):
-    if open:
-        st.session_state["create_popup"] = True
-
-
-def close_popup(close=True):
-    if close:
-        st.session_state["create_popup"] = False
 
 
 def validate_collection_name(collection_name):
@@ -83,7 +74,7 @@ def create_collection(collection_name, collection_type):
             json.dump(add_collection_dict, outfile)
 
         st.session_state["current_collection_id"] = id
-        close_popup()
+        components.collections_interface.close_popup()
 
 
 def delete_collection(collection):

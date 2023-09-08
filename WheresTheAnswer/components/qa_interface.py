@@ -2,7 +2,7 @@ import streamlit as st
 import documents
 import config
 import qa
-import document_collections
+import manage_collections
 
 
 def ask_form():
@@ -145,6 +145,6 @@ def delete_collection_button():
         "Delete Collection",
         type="primary",
         use_container_width=True,
-        on_click=document_collections.delete_collection,
+        on_click=manage_collections.delete_collection,
         args=(st.session_state["current_collection_id"],),
     )

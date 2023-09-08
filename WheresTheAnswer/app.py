@@ -1,11 +1,8 @@
-import config
-import documents
-import document_collections
-import qa
+import manage_collections
 import streamlit as st
 import components.sidebar
-import components.collections
-import components.qa
+import components.collections_interface
+import components.qa_interface
 
 
 # STATE MANAGEMENT
@@ -20,10 +17,10 @@ if (
     st.session_state["create_popup"] == False
     and not st.session_state["current_collection_id"]
 ):
-    if document_collections.get_collections():
+    if manage_collections.get_collections():
         st.session_state[
             "current_collection_id"
-        ] = document_collections.get_collections()[0]["id"]
+        ] = manage_collections.get_collections()[0]["id"]
     else:
         st.session_state["create_popup"] = True
 
@@ -32,12 +29,12 @@ if (
 components.sidebar.sidebar()
 
 if st.session_state["create_popup"]:
-    components.collections.create_collection_form()
+    components.collections_interface.create_collection_form()
 else:
     # Load collection info
     collection_title = ""
     collection_type = ""
-    for collection in document_collections.get_collections():
+    for collection in manage_collections.get_collections():
         if collection["id"] == st.session_state["current_collection_id"]:
             collection_title = collection["name"]
             collection_type = collection["type"]
@@ -45,17 +42,17 @@ else:
   
     st.title(collection_title)
 
-    components.qa.ask_form()
+    components.qa_interface.ask_form()
    
     st.markdown("######")
     
     if collection_type == "Manual":
-        components.qa.manual_collection_update_form()
+        components.qa_interface.manual_collection_update_form()
     else:
-        components.qa.path_collection_update_form(collection_type)
-        components.qa.path_collection_reload_form(collection_type)
+        components.qa_interface.path_collection_update_form(collection_type)
+        components.qa_interface.path_collection_reload_form(collection_type)
 
     st.markdown("######")
 
     st.divider()
-    components.qa.delete_collection_button()
+    components.qa_interface.delete_collection_button()
