@@ -39,13 +39,13 @@ else:
             collection_title = collection["name"]
             collection_type = collection["type"]
             break
-  
+
     st.title(collection_title)
 
     components.qa_interface.ask_form()
-   
+
     st.markdown("######")
-    
+
     if collection_type == "Manual":
         components.qa_interface.manual_collection_update_form()
     else:

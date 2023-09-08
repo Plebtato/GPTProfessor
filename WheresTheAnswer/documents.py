@@ -46,7 +46,10 @@ def upload_file(file, collection):
 
         # TODO: PPT
 
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=config.character_splitter_chunk_size, chunk_overlap=config.character_splitter_chunk_overlap)
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=config.character_splitter_chunk_size,
+            chunk_overlap=config.character_splitter_chunk_overlap,
+        )
         texts = text_splitter.split_text(input_docs)
 
         # TODO: Split very large documents to avoid rate limit
@@ -84,15 +87,15 @@ def chunks(lst, n):
     # https://stackoverflow.com/a/312464/18903720
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
-        yield lst[i:i + n]
+        yield lst[i : i + n]
 
 
-def create_and_load_collection(docs, collection, delete_old = False):
+def create_and_load_collection(docs, collection, delete_old=False):
     doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
     embeddings = OpenAIEmbeddings(openai_api_key=config.openai_api_key)
     vectordb = None
     time = datetime.datetime.now().isoformat()
-    
+
     # remove old db if needed
     if delete_old:
         vectordb = Chroma(
@@ -101,11 +104,11 @@ def create_and_load_collection(docs, collection, delete_old = False):
             embedding_function=embeddings,
         )
         vectordb.delete_collection()
-        
+
         collection_dict = {"path": "", "last_id": 0, "saved_docs": []}
         with open(doc_index_path, "w") as outfile:
             json.dump(collection_dict, outfile)
-    
+
     # Get available db ids
     with open(doc_index_path, "r") as openfile:
         json_obj = json.load(openfile)
@@ -115,7 +118,7 @@ def create_and_load_collection(docs, collection, delete_old = False):
     ids = [str(i) for i in range(last_id, last_id + len(docs))]
 
     # Split by chunks to avoid token limit
-    doc_chunks = chunks(docs, 50) # adjust based on average character count per line
+    doc_chunks = chunks(docs, 50)  # adjust based on average character count per line
     chunk_ids = chunks(ids, 50)
 
     # Load vector db
@@ -126,11 +129,11 @@ def create_and_load_collection(docs, collection, delete_old = False):
                 collection_name="db" + str(collection),
                 persist_directory=config.db_path,
                 embedding=embeddings,
-                ids=chunk_id
+                ids=chunk_id,
             )
         else:
             vectordb.add_documents(chunk, ids=chunk_id)
-    
+
     # Create and load source list
     sources = []
     for doc in docs:
@@ -144,7 +147,7 @@ def create_and_load_collection(docs, collection, delete_old = False):
                 source_ids.append(doc_id)
 
         saved_docs.append({"source": source, "ids": source_ids, "last_updated": time})
-    
+
     dictionary = {"last_id": last_id + len(docs), "saved_docs": saved_docs}
     with open(doc_index_path, "w") as outfile:
         json.dump(dictionary, outfile)
@@ -164,7 +167,7 @@ def write_path(path, collection):
 
 def get_path(collection):
     doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
-    
+
     if os.path.isfile(doc_index_path):
         with open(doc_index_path, "r") as openfile:
             json_obj = json.load(openfile)
@@ -176,14 +179,16 @@ def get_path(collection):
 def should_update_source(source_path, collection):
     # checks if source is not in collection or has been modified
     doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
-    
+
     if os.path.isfile(doc_index_path):
         with open(doc_index_path, "r") as openfile:
             json_obj = json.load(openfile)
-        
+
         for doc in json_obj["saved_docs"]:
             if source_path == doc["source"]:
-                if datetime.datetime.fromtimestamp(os.path.getmtime(source_path)) < datetime.datetime.fromisoformat(doc["last_updated"]):
+                if datetime.datetime.fromtimestamp(
+                    os.path.getmtime(source_path)
+                ) < datetime.datetime.fromisoformat(doc["last_updated"]):
                     return False
     return True
 
@@ -199,11 +204,11 @@ def delete_source_if_existing(source_path, collection):
         persist_directory=config.db_path,
         embedding_function=embeddings,
     )
-    
+
     if os.path.isfile(doc_index_path):
         with open(doc_index_path, "r") as openfile:
             json_obj = json.load(openfile)
-        
+
         for source in json_obj["saved_docs"]:
             if source_path == source["source"]:
                 print("delete ids " + str(source["ids"]))
@@ -227,7 +232,7 @@ def clear_removed_sources(collection):
         persist_directory=config.db_path,
         embedding_function=embeddings,
     )
-    
+
     if os.path.isfile(doc_index_path):
         with open(doc_index_path, "r") as openfile:
             json_obj = json.load(openfile)
@@ -241,14 +246,14 @@ def clear_removed_sources(collection):
 
                 with open(doc_index_path, "w") as outfile:
                     json.dump(copy_json, outfile)
-       
 
-def sync_folder(path, collection, reset = False):
+
+def sync_folder(path, collection, reset=False):
     if os.path.isdir(path):
         clear_removed_sources(collection)
         split_docs = []
-        
-        for dirpath, dirs, files in os.walk(path): 
+
+        for dirpath, dirs, files in os.walk(path):
             for filename in files:
                 filename_with_path = os.path.join(dirpath, filename)
                 if should_update_source(filename_with_path, collection):
@@ -264,9 +269,12 @@ def sync_folder(path, collection, reset = False):
                     if filename_with_path.endswith((".pdf", ".txt", ".csv", ".docx")):
                         delete_source_if_existing(filename_with_path, collection)
                         documents = loader.load()
-                        text_splitter = RecursiveCharacterTextSplitter(chunk_size=config.character_splitter_chunk_size, chunk_overlap=config.character_splitter_chunk_overlap)
+                        text_splitter = RecursiveCharacterTextSplitter(
+                            chunk_size=config.character_splitter_chunk_size,
+                            chunk_overlap=config.character_splitter_chunk_overlap,
+                        )
                         split_docs.extend(text_splitter.split_documents(documents))
-        
+
         create_and_load_collection(split_docs, collection, reset)
         write_path(path, collection)
 
@@ -275,22 +283,25 @@ def sync_google_drive(folder_id, collection):
     loader = GoogleDriveLoader(
         folder_id=folder_id,
         recursive=True,
-    )   
+    )
     documents = loader.load()
 
     if documents:
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=config.character_splitter_chunk_size, chunk_overlap=config.character_splitter_chunk_overlap)
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=config.character_splitter_chunk_size,
+            chunk_overlap=config.character_splitter_chunk_overlap,
+        )
         split_docs = text_splitter.split_documents(documents)
         create_and_load_collection(split_docs, collection)
         write_path(folder_id, collection)
 
 
-def sync_code_repo(path, collection, reset = False):
+def sync_code_repo(path, collection, reset=False):
     if os.path.isdir(path):
         clear_removed_sources(collection)
         split_docs = []
-        
-        for dirpath, dirs, files in os.walk(path): 
+
+        for dirpath, dirs, files in os.walk(path):
             for filename in files:
                 filename_with_path = os.path.join(dirpath, filename)
                 if should_update_source(filename_with_path, collection):
@@ -298,14 +309,17 @@ def sync_code_repo(path, collection, reset = False):
                         delete_source_if_existing(filename_with_path, collection)
                         loader = TextLoader(filename_with_path, encoding="utf8")
                         documents = loader.load()
-                        text_splitter = RecursiveCharacterTextSplitter(chunk_size=config.character_splitter_chunk_size, chunk_overlap=config.character_splitter_chunk_overlap)
+                        text_splitter = RecursiveCharacterTextSplitter(
+                            chunk_size=config.character_splitter_chunk_size,
+                            chunk_overlap=config.character_splitter_chunk_overlap,
+                        )
                         split_docs.extend(text_splitter.split_documents(documents))
-        
+
         create_and_load_collection(split_docs, collection, reset)
         write_path(path, collection)
 
 
-def display_saved_files(collection, show_delete = True):
+def display_saved_files(collection, show_delete=True):
     # Renders the saved files as a list with control buttons
 
     doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
@@ -336,24 +350,25 @@ def display_saved_files(collection, show_delete = True):
                         st.write(source["source"])
 
                     with col2:
-                            def delete_source():
-                                print("delete ids " + str(source["ids"]))
-                                vectordb._collection.delete(ids=source["ids"])
-                                print(vectordb._collection.count())
-                                copy_json = deepcopy(json_obj)
-                                for doc_data in saved_docs:
-                                    if doc_data["ids"] == source["ids"]:
-                                        copy_json["saved_docs"].remove(doc_data)
-                                        break
-                                with open(doc_index_path, "w") as outfile:
-                                    json.dump(copy_json, outfile)
 
-                            st.button(
-                                "Delete",
-                                key=str(collection) + "_" + str(index),
-                                on_click=delete_source,
-                                use_container_width=True,
-                            )
+                        def delete_source():
+                            print("delete ids " + str(source["ids"]))
+                            vectordb._collection.delete(ids=source["ids"])
+                            print(vectordb._collection.count())
+                            copy_json = deepcopy(json_obj)
+                            for doc_data in saved_docs:
+                                if doc_data["ids"] == source["ids"]:
+                                    copy_json["saved_docs"].remove(doc_data)
+                                    break
+                            with open(doc_index_path, "w") as outfile:
+                                json.dump(copy_json, outfile)
+
+                        st.button(
+                            "Delete",
+                            key=str(collection) + "_" + str(index),
+                            on_click=delete_source,
+                            use_container_width=True,
+                        )
                 else:
                     st.markdown("######")
                     st.write(source["source"])

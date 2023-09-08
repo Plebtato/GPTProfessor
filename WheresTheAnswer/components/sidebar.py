@@ -3,6 +3,7 @@ import config
 import manage_collections
 import components.collections_interface
 
+
 def sidebar():
     st.sidebar.title(":page_facing_up: Where's the Answer?")
     st.sidebar.divider()

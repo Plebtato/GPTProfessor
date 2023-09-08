@@ -11,7 +11,7 @@ def create_collection_form():
     new_collection_name = st.text_input("Name")
     new_collection_type = st.radio(
         "Type",
-        ["Manual","Sync", "Google Drive", "Code"],
+        ["Manual", "Sync", "Google Drive", "Code"],
         # ["Manual","Sync", "Google Drive", "Code", "Confluence"],
         captions=[
             "Add and remove your documents manually. Supports PDF, DOCX, CSV, and TXT.",

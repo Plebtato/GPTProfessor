@@ -32,7 +32,10 @@ def generate_response(query, model, collection):
         temperature=0.3, openai_api_key=config.openai_api_key, model_name=model_name
     )
     compressor = LLMChainFilter.from_llm(llm)
-    compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=vectordb.as_retriever(search_kwargs={"k": 16}))
+    compression_retriever = ContextualCompressionRetriever(
+        base_compressor=compressor,
+        base_retriever=vectordb.as_retriever(search_kwargs={"k": 16}),
+    )
     # llm_retriever = MultiQueryRetriever.from_llm(
     #     retriever=vectordb.as_retriever(search_kwargs={"k": 16}), llm=llm
     # )
