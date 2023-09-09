@@ -26,10 +26,10 @@ class DocumentCollection:
                 collection_title = collection["name"]
                 collection_type = collection["type"]
                 break
-            
+
         if collection_title == None or collection_title == None:
-            raise ValueError('Cannot find id in collection list')
-    
+            raise ValueError("Cannot find id in collection list")
+
         self.id = collection_id
         self.title = collection_title
         self.type = collection_type
@@ -45,12 +45,11 @@ class DocumentCollection:
             chunk_overlap=config.character_splitter_chunk_overlap,
         )
 
-
     def upload_file(self, file):
         """
         Uploads a file to the db collection for manual collection type
         Needs to be separate as Langchain loaders are not compatible with Streamlit file input
-        """ 
+        """
         # TODO: Load multiple at once
         if file is not None:
             if file.type == "application/pdf":
@@ -100,7 +99,6 @@ class DocumentCollection:
             with open(self.doc_index_path, "w") as outfile:
                 json.dump(dictionary, outfile)
 
-
     def create_and_load_collection(self, docs, reset=False):
         """
         Loads files into a collection based on path or folder id
@@ -128,7 +126,9 @@ class DocumentCollection:
         chunk_ids = utils.chunks(ids, config.embedding_api_chunk_limit)
 
         # Load vector db
-        for index, (chunk, chunk_id) in tqdm.tqdm(enumerate(zip(doc_chunks, chunk_ids))):
+        for index, (chunk, chunk_id) in tqdm.tqdm(
+            enumerate(zip(doc_chunks, chunk_ids))
+        ):
             if index == 0:
                 self.vector_db = Chroma.from_documents(
                     chunk,
@@ -152,12 +152,13 @@ class DocumentCollection:
                 if doc.metadata["source"] == source:
                     source_ids.append(doc_id)
 
-            saved_docs.append({"source": source, "ids": source_ids, "last_updated": time})
+            saved_docs.append(
+                {"source": source, "ids": source_ids, "last_updated": time}
+            )
 
         dictionary = {"last_id": last_id + len(docs), "saved_docs": saved_docs}
         with open(self.doc_index_path, "w") as outfile:
             json.dump(dictionary, outfile)
-
 
     def update_path(self, path):
         """
@@ -171,13 +172,11 @@ class DocumentCollection:
         with open(self.doc_index_path, "w") as outfile:
             json.dump(json_obj, outfile)
 
-
     # use attribute instead
     def get_path(self):
         with open(self.doc_index_path, "r") as openfile:
             json_obj = json.load(openfile)
         return json_obj["path"]
-
 
     def should_update_source(self, source_path):
         """
@@ -193,7 +192,6 @@ class DocumentCollection:
                 ) < datetime.datetime.fromisoformat(doc["last_updated"]):
                     return False
         return True
-
 
     def delete_source_if_existing(self, source_path):
         """
@@ -213,7 +211,6 @@ class DocumentCollection:
                 with open(self.doc_index_path, "w") as outfile:
                     json.dump(copy_json, outfile)
 
-
     def clear_removed_sources(self):
         """
         Clears sources that no longer exist in the directory
@@ -230,7 +227,6 @@ class DocumentCollection:
 
                 with open(self.doc_index_path, "w") as outfile:
                     json.dump(copy_json, outfile)
-
 
     def sync_folder(self, path, reset=False):
         if os.path.isdir(path):
@@ -250,7 +246,9 @@ class DocumentCollection:
                         elif filename_with_path.endswith(".docx"):
                             loader = Docx2txtLoader(filename_with_path)
 
-                        if filename_with_path.endswith((".pdf", ".txt", ".csv", ".docx")):
+                        if filename_with_path.endswith(
+                            (".pdf", ".txt", ".csv", ".docx")
+                        ):
                             self.delete_source_if_existing(filename_with_path)
                             documents = loader.load()
                             text_splitter = RecursiveCharacterTextSplitter(
@@ -263,7 +261,6 @@ class DocumentCollection:
             self.update_path(path)
         else:
             st.error("Path not found!")
-
 
     def sync_google_drive(self, folder_id):
         loader = GoogleDriveLoader(
@@ -278,7 +275,6 @@ class DocumentCollection:
             self.update_path(folder_id)
         else:
             st.error("Google Drive folder not found!")
-
 
     def sync_code_repo(self, path, reset=False):
         if os.path.isdir(path):
@@ -303,7 +299,6 @@ class DocumentCollection:
             self.update_path(path)
         else:
             st.error("Path not found!")
-
 
     def display_saved_files(self, show_delete=True):
         # Renders the saved files as a list with control buttons

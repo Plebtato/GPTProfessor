@@ -5,7 +5,7 @@ import manage_collections
 from documents import DocumentCollection
 
 
-def ask_form(collection : DocumentCollection):
+def ask_form(collection: DocumentCollection):
     with st.form("ask_form"):
         text = st.text_area(
             "Question",
@@ -31,12 +31,10 @@ def ask_form(collection : DocumentCollection):
             and st.session_state["current_collection_id"]
         ):
             with st.spinner():
-                qa.generate_response(
-                    text, model, collection
-                )
+                qa.generate_response(text, model, collection)
 
 
-def manual_collection_update_form(collection : DocumentCollection):
+def manual_collection_update_form(collection: DocumentCollection):
     st.subheader("Upload")
     with st.form("upload_form", clear_on_submit=False):
         file = st.file_uploader(
@@ -58,7 +56,7 @@ def manual_collection_update_form(collection : DocumentCollection):
         collection.display_saved_files()
 
 
-def path_collection_update_form(collection : DocumentCollection):
+def path_collection_update_form(collection: DocumentCollection):
     current_collection_path = collection.get_path()
     if collection.type == "Sync":
         st.subheader("Change Folder") if current_collection_path else st.subheader(
@@ -108,22 +106,16 @@ def path_collection_update_form(collection : DocumentCollection):
                 reset = True if current_collection_path else False
 
                 if collection.type == "Sync":
-                    collection.sync_folder(
-                        path, reset
-                    )
+                    collection.sync_folder(path, reset)
                 elif collection.type == "Google Drive":
-                    collection.sync_google_drive(
-                        path
-                    )
+                    collection.sync_google_drive(path)
                 elif collection.type == "Code":
-                    collection.sync_code_repo(
-                        path, reset
-                    )
+                    collection.sync_code_repo(path, reset)
 
             st.success("Done!")
 
 
-def path_collection_reload_form(collection : DocumentCollection):
+def path_collection_reload_form(collection: DocumentCollection):
     current_collection_path = collection.get_path()
     if current_collection_path:
         if collection.type == "Sync":
@@ -166,9 +158,7 @@ def path_collection_reload_form(collection : DocumentCollection):
 
         if collection.type == "Sync":
             with st.expander("View File List", expanded=False):
-                collection.display_saved_files(
-                    False
-                )
+                collection.display_saved_files(False)
 
 
 def delete_collection_button():
