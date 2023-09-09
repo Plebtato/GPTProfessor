@@ -1,5 +1,5 @@
-import time
 import config
+import utils
 import json
 import os
 from copy import deepcopy
@@ -54,7 +54,7 @@ def upload_file(file, collection):
 
         # TODO: Split very large documents to avoid rate limit
 
-        doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
+        doc_index_path = utils.get_doc_index_path(collection)
         embeddings = OpenAIEmbeddings(openai_api_key=config.openai_api_key)
         vectordb = Chroma(
             "db" + str(collection),
@@ -91,7 +91,7 @@ def chunks(lst, n):
 
 
 def create_and_load_collection(docs, collection, delete_old=False):
-    doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
+    doc_index_path = utils.get_doc_index_path(collection)
     embeddings = OpenAIEmbeddings(openai_api_key=config.openai_api_key)
     vectordb = None
     time = datetime.datetime.now().isoformat()
@@ -118,8 +118,8 @@ def create_and_load_collection(docs, collection, delete_old=False):
     ids = [str(i) for i in range(last_id, last_id + len(docs))]
 
     # Split by chunks to avoid token limit
-    doc_chunks = chunks(docs, 50)  # adjust based on average character count per line
-    chunk_ids = chunks(ids, 50)
+    doc_chunks = chunks(docs, config.embedding_api_chunk_limit)
+    chunk_ids = chunks(ids, config.embedding_api_chunk_limit)
 
     # Load vector db
     for index, (chunk, chunk_id) in tqdm.tqdm(enumerate(zip(doc_chunks, chunk_ids))):
@@ -154,7 +154,7 @@ def create_and_load_collection(docs, collection, delete_old=False):
 
 
 def write_path(path, collection):
-    doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
+    doc_index_path = utils.get_doc_index_path(collection)
 
     with open(doc_index_path, "r") as openfile:
         json_obj = json.load(openfile)
@@ -166,7 +166,7 @@ def write_path(path, collection):
 
 
 def get_path(collection):
-    doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
+    doc_index_path = utils.get_doc_index_path(collection)
 
     if os.path.isfile(doc_index_path):
         with open(doc_index_path, "r") as openfile:
@@ -178,7 +178,7 @@ def get_path(collection):
 
 def should_update_source(source_path, collection):
     # checks if source is not in collection or has been modified
-    doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
+    doc_index_path = utils.get_doc_index_path(collection)
 
     if os.path.isfile(doc_index_path):
         with open(doc_index_path, "r") as openfile:
@@ -197,7 +197,7 @@ def delete_source_if_existing(source_path, collection):
     """
     Deletes the source if it is in the collection already
     """
-    doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
+    doc_index_path = utils.get_doc_index_path(collection)
     embeddings = OpenAIEmbeddings(openai_api_key=config.openai_api_key)
     vectordb = Chroma(
         "db" + str(collection),
@@ -225,7 +225,7 @@ def clear_removed_sources(collection):
     """
     Clears sources that no longer exist in the directory
     """
-    doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
+    doc_index_path = utils.get_doc_index_path(collection)
     embeddings = OpenAIEmbeddings(openai_api_key=config.openai_api_key)
     vectordb = Chroma(
         "db" + str(collection),
@@ -322,7 +322,7 @@ def sync_code_repo(path, collection, reset=False):
 def display_saved_files(collection, show_delete=True):
     # Renders the saved files as a list with control buttons
 
-    doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
+    doc_index_path = utils.get_doc_index_path(collection)
 
     if os.path.isfile(doc_index_path):
         embeddings = OpenAIEmbeddings(openai_api_key=config.openai_api_key)

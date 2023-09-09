@@ -13,3 +13,5 @@ openai_api_key = os.environ.get("OPENAI_API_KEY")
 
 character_splitter_chunk_size = 2000
 character_splitter_chunk_overlap = 400
+
+embedding_api_chunk_limit = 50

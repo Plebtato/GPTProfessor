@@ -1,4 +1,5 @@
 import config
+import utils
 import streamlit as st
 import json
 import os
@@ -80,7 +81,7 @@ def create_collection(collection_name, collection_type):
 
 
 def delete_collection(collection):
-    doc_index_path = os.path.join("data", "doc_index", str(collection) + ".json")
+    doc_index_path = utils.get_doc_index_path(collection)
 
     if os.path.exists(doc_index_path):
         embeddings = OpenAIEmbeddings(openai_api_key=config.openai_api_key)
