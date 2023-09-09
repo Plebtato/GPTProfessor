@@ -4,7 +4,7 @@ Activate venv (Windows):
 .venv/scripts/activate.ps1
 
 Run:
-streamlit run WheresTheAnswer/app.py
+streamlit run GPTProfessor/app.py
 
 Packages:
 streamlit
