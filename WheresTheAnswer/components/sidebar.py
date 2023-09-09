@@ -5,7 +5,7 @@ import components.collections_interface
 
 
 def sidebar():
-    st.sidebar.title(":page_facing_up: Where's the Answer?")
+    st.sidebar.title(":page_facing_up: GPTProfessor")
     st.sidebar.divider()
 
     st.sidebar.header("Document Collections")

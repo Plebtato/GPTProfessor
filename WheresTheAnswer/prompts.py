@@ -1,5 +1,9 @@
 from langchain.prompts import PromptTemplate
 
+# TODO: Create separate prompts for each model.
+# DaVinci tends add additional unwanted info not from the sources
+# GPT-3.5 tends to avoid including info that has already been found in the sources
+# have stricter info requirements for davinci, looser for GPT-3.5
 
 qa_chain_template = """
 Use the following sources to answer the question at the end.

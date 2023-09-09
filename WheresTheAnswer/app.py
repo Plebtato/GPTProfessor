@@ -3,6 +3,7 @@ import streamlit as st
 import components.sidebar
 import components.collections_interface
 import components.qa_interface
+from documents import DocumentCollection
 
 
 # STATE MANAGEMENT
@@ -32,25 +33,27 @@ if st.session_state["create_popup"]:
     components.collections_interface.create_collection_form()
 else:
     # Load collection info
-    collection_title = ""
-    collection_type = ""
-    for collection in manage_collections.get_collections():
-        if collection["id"] == st.session_state["current_collection_id"]:
-            collection_title = collection["name"]
-            collection_type = collection["type"]
-            break
+    # use st.cache resource?
+    collection = DocumentCollection(st.session_state["current_collection_id"])
+    # collection_title = ""
+    # collection_type = ""
+    # for collection in manage_collections.get_collections():
+    #     if collection["id"] == st.session_state["current_collection_id"]:
+    #         collection_title = collection["name"]
+    #         collection_type = collection["type"]
+    #         break
 
-    st.title(collection_title)
+    st.title(collection.title)
 
-    components.qa_interface.ask_form()
+    components.qa_interface.ask_form(collection)
 
     st.markdown("######")
 
-    if collection_type == "Manual":
-        components.qa_interface.manual_collection_update_form()
+    if collection.type == "Manual":
+        components.qa_interface.manual_collection_update_form(collection)
     else:
-        components.qa_interface.path_collection_update_form(collection_type)
-        components.qa_interface.path_collection_reload_form(collection_type)
+        components.qa_interface.path_collection_update_form(collection)
+        components.qa_interface.path_collection_reload_form(collection)
 
     st.markdown("######")
 

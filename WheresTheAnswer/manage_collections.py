@@ -91,6 +91,7 @@ def delete_collection(collection):
             embedding_function=embeddings,
         )
         vectordb.delete_collection()
+        vectordb.persist()
 
         os.remove(doc_index_path)
         collections_list = get_collections()

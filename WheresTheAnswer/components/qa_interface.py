@@ -1,11 +1,11 @@
 import streamlit as st
-import documents
 import config
 import qa
 import manage_collections
+from documents import DocumentCollection
 
 
-def ask_form():
+def ask_form(collection : DocumentCollection):
     with st.form("ask_form"):
         text = st.text_area(
             "Question",
@@ -32,11 +32,11 @@ def ask_form():
         ):
             with st.spinner():
                 qa.generate_response(
-                    text, model, st.session_state["current_collection_id"]
+                    text, model, collection
                 )
 
 
-def manual_collection_update_form():
+def manual_collection_update_form(collection : DocumentCollection):
     st.subheader("Upload")
     with st.form("upload_form", clear_on_submit=False):
         file = st.file_uploader(
@@ -49,32 +49,30 @@ def manual_collection_update_form():
             st.error("Error, invalid collection.", icon="⚠")
         if submitted_doc and file and st.session_state["current_collection_id"]:
             with st.spinner("This could take a while..."):
-                documents.upload_file(file, st.session_state["current_collection_id"])
+                collection.upload_file(file)
             st.success("Done!")
 
     st.markdown("######")
     st.subheader("Saved Files")
     with st.expander("List", expanded=True):
-        documents.display_saved_files(st.session_state["current_collection_id"])
+        collection.display_saved_files()
 
 
-def path_collection_update_form(type):
-    current_collection_path = documents.get_path(
-        st.session_state["current_collection_id"]
-    )
-    if type == "Sync":
+def path_collection_update_form(collection : DocumentCollection):
+    current_collection_path = collection.get_path()
+    if collection.type == "Sync":
         st.subheader("Change Folder") if current_collection_path else st.subheader(
             "Select Folder"
         )
         path_placeholder = "C:\\Users\\Me\\Documents\\Course Notes"
         input_label = "Path"
-    elif type == "Google Drive":
+    elif collection.type == "Google Drive":
         st.subheader(
             "Change Google Drive Folder"
         ) if current_collection_path else st.subheader("Select Google Drive Folder")
         path_placeholder = "1yucgL9WGgWZdM1TOuKkeghlPizuzMYb5"
         input_label = "Folder ID"
-    elif type == "Code":
+    elif collection.type == "Code":
         st.subheader("Change Repository") if current_collection_path else st.subheader(
             "Select Repository"
         )
@@ -82,7 +80,7 @@ def path_collection_update_form(type):
         input_label = "Path"
 
     with st.form("select_form", clear_on_submit=True):
-        if type == "Google Drive":
+        if collection.type == "Google Drive":
             st.subheader("Requirements")
             st.write(
                 """
@@ -109,38 +107,36 @@ def path_collection_update_form(type):
             with st.spinner("This could take a while..."):
                 reset = True if current_collection_path else False
 
-                if type == "Sync":
-                    documents.sync_folder(
-                        path, st.session_state["current_collection_id"], reset
+                if collection.type == "Sync":
+                    collection.sync_folder(
+                        path, reset
                     )
-                elif type == "Google Drive":
-                    documents.sync_google_drive(
-                        path, st.session_state["current_collection_id"]
+                elif collection.type == "Google Drive":
+                    collection.sync_google_drive(
+                        path
                     )
-                elif type == "Code":
-                    documents.sync_code_repo(
-                        path, st.session_state["current_collection_id"], reset
+                elif collection.type == "Code":
+                    collection.sync_code_repo(
+                        path, reset
                     )
 
             st.success("Done!")
 
 
-def path_collection_reload_form(type):
-    current_collection_path = documents.get_path(
-        st.session_state["current_collection_id"]
-    )
+def path_collection_reload_form(collection : DocumentCollection):
+    current_collection_path = collection.get_path()
     if current_collection_path:
-        if type == "Sync":
+        if collection.type == "Sync":
             st.subheader("Reload Folder")
             description = (
                 "Updates the collection with the new changes to the current folder:"
             )
-        elif type == "Google Drive":
+        elif collection.type == "Google Drive":
             st.subheader("Reload Folder")
             description = (
                 "Updates the collection with the new changes to the current folder:"
             )
-        elif type == "Code":
+        elif collection.type == "Code":
             st.subheader("Reload Repository")
             description = (
                 "Updates the collection with new changes to the current repository:"
@@ -153,28 +149,25 @@ def path_collection_reload_form(type):
 
             if submitted_path and st.session_state["current_collection_id"]:
                 with st.spinner("This could take a while..."):
-                    if type == "Sync":
-                        documents.sync_folder(
+                    if collection.type == "Sync":
+                        collection.sync_folder(
                             current_collection_path,
-                            st.session_state["current_collection_id"],
                         )
-                    elif type == "Google Drive":
-                        documents.sync_google_drive(
+                    elif collection.type == "Google Drive":
+                        collection.sync_google_drive(
                             current_collection_path,
-                            st.session_state["current_collection_id"],
                         )
-                    elif type == "Code":
-                        documents.sync_code_repo(
+                    elif collection.type == "Code":
+                        collection.sync_code_repo(
                             current_collection_path,
-                            st.session_state["current_collection_id"],
                         )
 
                 st.success("Done!")
 
-        if type == "Sync":
+        if collection.type == "Sync":
             with st.expander("View File List", expanded=False):
-                documents.display_saved_files(
-                    st.session_state["current_collection_id"], False
+                collection.display_saved_files(
+                    False
                 )
 
 

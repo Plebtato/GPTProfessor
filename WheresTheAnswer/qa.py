@@ -9,9 +9,10 @@ from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import LLMChainFilter
 from langchain.vectorstores import Chroma
 import prompts
+from documents import DocumentCollection
 
 
-def generate_response(query, model, collection):
+def generate_response(query, model, collection : DocumentCollection):
     if model == "GPT-4":
         model_name = "gpt-4"
         max_tokens_limit = 6750
@@ -22,19 +23,13 @@ def generate_response(query, model, collection):
         model_name = "text-davinci-003"
         max_tokens_limit = 3375
 
-    embeddings = OpenAIEmbeddings(openai_api_key=config.openai_api_key)
-    vectordb = Chroma(
-        "db" + str(collection),
-        persist_directory=config.db_path,
-        embedding_function=embeddings,
-    )
     llm = OpenAI(
         temperature=0.3, openai_api_key=config.openai_api_key, model_name=model_name
     )
     compressor = LLMChainFilter.from_llm(llm)
     compression_retriever = ContextualCompressionRetriever(
         base_compressor=compressor,
-        base_retriever=vectordb.as_retriever(search_kwargs={"k": 16}),
+        base_retriever=collection.vector_db.as_retriever(search_kwargs={"k": 16}),
     )
     # llm_retriever = MultiQueryRetriever.from_llm(
     #     retriever=vectordb.as_retriever(search_kwargs={"k": 16}), llm=llm
