@@ -78,8 +78,6 @@ class DocumentCollection:
 
             texts = self.text_splitter.split_text(input_docs)
 
-            # TODO: Split very large documents to avoid rate limit
-
             with open(self.doc_index_path, "r") as openfile:
                 json_obj = json.load(openfile)
 
@@ -90,7 +88,15 @@ class DocumentCollection:
             for text in texts:
                 metadata.append({"source": file.name})
 
-            self.vector_db.add_texts(texts, metadatas=metadata, ids=ids)
+            text_chunks = utils.chunks(texts, config.embedding_api_chunk_limit)
+            chunk_ids = utils.chunks(ids, config.embedding_api_chunk_limit)
+            chunk_metadatas = utils.chunks(metadata, config.embedding_api_chunk_limit)
+
+            # Load vector db
+            for index, (chunk, chunk_id, chunk_metadata) in tqdm.tqdm(
+                enumerate(zip(text_chunks, chunk_ids, chunk_metadatas))
+            ):
+                self.vector_db.add_texts(chunk, metadatas=chunk_metadata, ids=chunk_id)
 
             saved_docs = json_obj["saved_docs"]
             saved_docs.append({"source": file.name, "ids": ids})

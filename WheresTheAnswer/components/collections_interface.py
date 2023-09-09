@@ -16,7 +16,7 @@ def create_collection_form():
         captions=[
             "Add and remove your documents manually. Supports PDF, DOCX, CSV, and TXT.",
             "Select a folder on your device to automatically upload and sync. Supports PDF, DOCX, CSV, and TXT.",
-            "Select a Google Drive folder to automatically upload and sync Google Docs and Google Sheets.",
+            "Select a Google Drive folder to automatically upload and sync Google Docs and Google Sheets. WIP!",
             "Select a local code repository to automatically upload and sync. Supports C++ and C# source code. WIP!",
             # "Load Confluence pages.",
         ],

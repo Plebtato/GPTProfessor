@@ -45,7 +45,10 @@ else:
 
     st.title(collection.title)
 
-    components.qa_interface.ask_form(collection)
+    tab1, tab2, tab3 = st.tabs(["Q&A", "Chat", "Quiz"])
+
+    with tab1:
+        components.qa_interface.ask_form(collection)
 
     st.markdown("######")
 

@@ -7,9 +7,11 @@ from documents import DocumentCollection
 
 def ask_form(collection: DocumentCollection):
     with st.form("ask_form"):
+        st.write("Ask a question and get a quick response. Works better with more specific questions.")
+        st.markdown("######")
         text = st.text_area(
             "Question",
-            placeholder="Ask me anything about your documents! More specific questions work better.",
+            placeholder="Ask me anything, as long as it is in your documents! ",
         )
         model = st.radio(
             "Select Model",
@@ -121,17 +123,17 @@ def path_collection_reload_form(collection: DocumentCollection):
         if collection.type == "Sync":
             st.subheader("Reload Folder")
             description = (
-                "Updates the collection with the new changes to the current folder:"
+                "Updates the collection with new changes to the files in the current folder:"
             )
         elif collection.type == "Google Drive":
             st.subheader("Reload Folder")
             description = (
-                "Updates the collection with the new changes to the current folder:"
+                "Updates the collection with new changes to the files in the current folder:"
             )
         elif collection.type == "Code":
             st.subheader("Reload Repository")
             description = (
-                "Updates the collection with new changes to the current repository:"
+                "Updates the collection with new changes to the files in the current repository:"
             )
 
         with st.form("reload_form", clear_on_submit=False):
