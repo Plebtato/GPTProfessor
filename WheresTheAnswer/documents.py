@@ -37,7 +37,7 @@ class DocumentCollection:
         self.embeddings = OpenAIEmbeddings(openai_api_key=config.openai_api_key)
         self.vector_db = Chroma(
             "db" + str(collection_id),
-            persist_directory=config.db_path,
+            persist_directory=config.chroma_db_path,
             embedding_function=self.embeddings,
         )
         self.text_splitter = RecursiveCharacterTextSplitter(
@@ -139,7 +139,7 @@ class DocumentCollection:
                 self.vector_db = Chroma.from_documents(
                     chunk,
                     collection_name="db" + str(self.id),
-                    persist_directory=config.db_path,
+                    persist_directory=config.chroma_db_path,
                     embedding=self.embeddings,
                     ids=chunk_id,
                 )

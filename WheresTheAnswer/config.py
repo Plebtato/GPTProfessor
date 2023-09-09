@@ -8,7 +8,7 @@ class Collection_Type(StrEnum):
     CODE = "Code Repository"
 
 collections_path = os.path.join("data", "collections.json")
-db_path = os.path.join("data", "chroma_db")
+chroma_db_path = os.path.join("data", "chroma_db")
 openai_api_key = os.environ.get("OPENAI_API_KEY")
 
 character_splitter_chunk_size = 2000

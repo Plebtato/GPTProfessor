@@ -87,7 +87,7 @@ def delete_collection(collection):
         embeddings = OpenAIEmbeddings(openai_api_key=config.openai_api_key)
         vectordb = Chroma(
             "db" + str(collection),
-            persist_directory=config.db_path,
+            persist_directory=config.chroma_db_path,
             embedding_function=embeddings,
         )
         vectordb.delete_collection()
