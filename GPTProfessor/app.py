@@ -35,13 +35,6 @@ else:
     # Load collection info
     # use st.cache resource?
     collection = DocumentCollection(st.session_state["current_collection_id"])
-    # collection_title = ""
-    # collection_type = ""
-    # for collection in manage_collections.get_collections():
-    #     if collection["id"] == st.session_state["current_collection_id"]:
-    #         collection_title = collection["name"]
-    #         collection_type = collection["type"]
-    #         break
 
     st.title(collection.title)
 

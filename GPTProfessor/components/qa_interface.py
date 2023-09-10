@@ -33,11 +33,14 @@ def ask_form(collection: DocumentCollection):
             and st.session_state["current_collection_id"]
         ):
             with st.spinner():
-                qa.generate_qa_answer(question, model, collection)
+                st.info(qa.generate_qa_answer(question, model, collection))
 
 
 def chat_form(collection: DocumentCollection):
-    st.write("Have a converation! Please note that the answers from here will probably be less refined than the Q&A answers.")
+    with st.form("chat_form"):
+        st.write("Have a converation! Please note that the answers from here will probably be less refined than the Q&A answers.")
+        st.markdown("######")
+
 
 
 def quiz_form(collection: DocumentCollection):
@@ -67,7 +70,7 @@ def quiz_form(collection: DocumentCollection):
             and st.session_state["current_collection_id"]
         ):
             with st.spinner():
-                qa.generate_quiz_questions(topic, model, collection)
+                st.info(qa.generate_quiz_questions(topic, model, collection))
 
 
 def manual_collection_update_form(collection: DocumentCollection):

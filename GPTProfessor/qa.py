@@ -1,13 +1,17 @@
 import config
 import streamlit as st
 from langchain.llms import OpenAI
+from langchain.chat_models import ChatOpenAI
 from langchain.chains import RetrievalQAWithSourcesChain
 from langchain.chains.qa_with_sources import load_qa_with_sources_chain
-from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import LLMChainFilter
-from langchain.vectorstores import Chroma
+from langchain.schema import (
+    AIMessage,
+    HumanMessage,
+    SystemMessage
+)
 import prompts
 from documents import DocumentCollection
 
@@ -65,7 +69,7 @@ def generate_qa_answer(query, model, collection: DocumentCollection):
         query += "?"
 
     result = qa_chain({"question": query}, return_only_outputs=True)
-    display_llm_result(result)
+    return format_llm_result_with_source(result)
 
 
 def generate_quiz_questions(topic, model, collection: DocumentCollection):
@@ -99,10 +103,10 @@ def generate_quiz_questions(topic, model, collection: DocumentCollection):
     )
 
     result = qa_chain({"question": topic}, return_only_outputs=True)
-    display_llm_result(result)
+    return format_llm_result_with_source(result)
 
 
-def display_llm_result(result):
+def format_llm_result_with_source(result):
     sources = []
     for doc in result["source_documents"]:
         # print("\n\n" + str(doc))
@@ -120,5 +124,5 @@ def display_llm_result(result):
     else:
         source_output = ""
 
-    st.info(result["answer"] + source_output)
-    # print("\nLLM query done")
+    return result["answer"] + source_output
+    
