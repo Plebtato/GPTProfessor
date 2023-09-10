@@ -1,6 +1,7 @@
 import os
 from enum import StrEnum
  
+ # TODO: add constants for colleciton type, model name (displayed and api param), model token limit
 class Collection_Type(StrEnum):
     MANUAL = "Manual"
     SYNC = "Sync"

@@ -2,12 +2,15 @@ import streamlit as st
 import config
 import qa
 import manage_collections
+import components.chat_interface
 from documents import DocumentCollection
 
 
 def ask_form(collection: DocumentCollection):
     with st.form("ask_form"):
-        st.write("Ask a question and get a quick response. Works better with more specific questions.")
+        st.write(
+            "Ask a question and get a quick response. Works better with more specific questions."
+        )
         st.markdown("######")
         question = st.text_area(
             "Question",
@@ -36,11 +39,26 @@ def ask_form(collection: DocumentCollection):
                 st.info(qa.generate_qa_answer(question, model, collection))
 
 
-def chat_form(collection: DocumentCollection):
+def open_chat_form(collection: DocumentCollection):
     with st.form("chat_form"):
-        st.write("Have a converation! Please note that the answers from here will probably be less refined than the Q&A answers.")
+        st.write(
+            "Have a converation! Please note that the answers from here will probably be less refined than the Q&A answers."
+        )
         st.markdown("######")
-
+        model = st.radio(
+            "Select Model",
+            ("GPT-3.5", "GPT-4"),
+            captions=[
+                "This model is the basis for ChatGPT.",
+                "Highly capable next-generation model. Requires special OpenAI access. May hurt your wallet.",
+            ],
+        )
+        st.form_submit_button(
+            "Launch Chat",
+            use_container_width=True,
+            on_click=components.chat_interface.open_popup,
+            args=(model,),
+        )
 
 
 def quiz_form(collection: DocumentCollection):
@@ -55,7 +73,7 @@ def quiz_form(collection: DocumentCollection):
             "Select Model",
             ("GPT-3.5", "GPT-4"),
             captions=[
-                "This model is also the basis for ChatGPT.",
+                "This model is the basis for ChatGPT.",
                 "Highly capable next-generation model. Requires special OpenAI access. May hurt your wallet.",
             ],
         )
@@ -159,19 +177,13 @@ def path_collection_reload_form(collection: DocumentCollection):
     if current_collection_path:
         if collection.type == "Sync":
             st.subheader("Reload Folder")
-            description = (
-                "Updates the collection with new changes to the files in the current folder:"
-            )
+            description = "Updates the collection with new changes to the files in the current folder:"
         elif collection.type == "Google Drive":
             st.subheader("Reload Folder")
-            description = (
-                "Updates the collection with new changes to the files in the current folder:"
-            )
+            description = "Updates the collection with new changes to the files in the current folder:"
         elif collection.type == "Code":
             st.subheader("Reload Repository")
-            description = (
-                "Updates the collection with new changes to the files in the current repository:"
-            )
+            description = "Updates the collection with new changes to the files in the current repository:"
 
         with st.form("reload_form", clear_on_submit=False):
             st.write(description)

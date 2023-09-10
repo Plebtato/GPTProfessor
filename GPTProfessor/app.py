@@ -3,6 +3,7 @@ import streamlit as st
 import components.sidebar
 import components.collections_interface
 import components.qa_interface
+import components.chat_interface
 from documents import DocumentCollection
 
 
@@ -10,6 +11,9 @@ from documents import DocumentCollection
 
 if "create_popup" not in st.session_state:
     st.session_state["create_popup"] = True
+
+if "chat_popup" not in st.session_state:
+    st.session_state["chat_popup"] = False
 
 if "current_collection_id" not in st.session_state:
     st.session_state["current_collection_id"] = ""
@@ -35,27 +39,40 @@ else:
     # Load collection info
     # use st.cache resource?
     collection = DocumentCollection(st.session_state["current_collection_id"])
-
     st.title(collection.title)
 
-    tab1, tab2, tab3 = st.tabs(["Q&A", "Chat", "Quiz"])
+    if st.session_state["chat_popup"]:
+        # Initialize chat history
+        if "messages_" + str(collection.id) not in st.session_state:
+            st.session_state["messages_" + str(collection.id)] = [
+                {
+                    "role": "assistant",
+                    "content": "Hello there! Feel free to ask questions and discuss!",
+                }
+            ]
 
-    with tab1:
-        components.qa_interface.ask_form(collection)
-    with tab2:
-        st.write("WIP")
-    with tab3:
-        components.qa_interface.quiz_form(collection)
+        st.markdown("######")
+        components.chat_interface.chat(collection)
 
-    st.markdown("######")
-
-    if collection.type == "Manual":
-        components.qa_interface.manual_collection_update_form(collection)
     else:
-        components.qa_interface.path_collection_update_form(collection)
-        components.qa_interface.path_collection_reload_form(collection)
+        tab1, tab2, tab3 = st.tabs(["Q&A", "Chat", "Quiz"])
 
-    st.markdown("######")
+        with tab1:
+            components.qa_interface.ask_form(collection)
+        with tab2:
+            components.qa_interface.open_chat_form(collection)
+        with tab3:
+            components.qa_interface.quiz_form(collection)
 
-    st.divider()
-    components.qa_interface.delete_collection_button()
+        st.markdown("######")
+
+        if collection.type == "Manual":
+            components.qa_interface.manual_collection_update_form(collection)
+        else:
+            components.qa_interface.path_collection_update_form(collection)
+            components.qa_interface.path_collection_reload_form(collection)
+
+        st.markdown("######")
+
+        st.divider()
+        components.qa_interface.delete_collection_button()

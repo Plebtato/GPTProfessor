@@ -69,6 +69,7 @@ def create_collection_form():
 def open_popup(open=True):
     if open:
         st.session_state["create_popup"] = True
+        st.session_state["chat_popup"] = False
 
 
 def close_popup(close=True):

@@ -1,4 +1,5 @@
 import config
+import utils
 import streamlit as st
 from langchain.llms import OpenAI
 from langchain.chat_models import ChatOpenAI
@@ -16,21 +17,8 @@ import prompts
 from documents import DocumentCollection
 
 
-def get_model(model):
-    if model == "GPT-4":
-        model_name = "gpt-4"
-        max_tokens_limit = 6750
-    elif model == "GPT-3.5":
-        model_name = "gpt-3.5-turbo"
-        max_tokens_limit = 3375
-    elif model == "DaVinci":
-        model_name = "text-davinci-003"
-        max_tokens_limit = 3375
-    return model_name, max_tokens_limit
-
-
 def generate_qa_answer(query, model, collection: DocumentCollection):
-    model_name, max_tokens_limit = get_model(model)
+    model_name, max_tokens_limit = utils.get_model(model)
 
     if model == "GPT-4":
         qa_prompt = prompts.QA_PROMPT_GPT_35
@@ -73,7 +61,7 @@ def generate_qa_answer(query, model, collection: DocumentCollection):
 
 
 def generate_quiz_questions(topic, model, collection: DocumentCollection):
-    model_name, max_tokens_limit = get_model(model)
+    model_name, max_tokens_limit = utils.get_model(model)
 
     if model == "GPT-4":
         quiz_prompt = prompts.QUIZ_PROMPT_GPT_35

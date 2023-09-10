@@ -26,6 +26,7 @@ def display_collections():
         def click(collection=collection):
             st.session_state["current_collection_id"] = collection["id"]
             st.session_state["create_popup"] = False
+            st.session_state["chat_popup"] = False
 
         st.sidebar.button(
             collection["name"],
