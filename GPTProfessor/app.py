@@ -49,6 +49,10 @@ else:
 
     with tab1:
         components.qa_interface.ask_form(collection)
+    with tab2:
+        st.write("WIP")
+    with tab3:
+        components.qa_interface.quiz_form(collection)
 
     st.markdown("######")
 

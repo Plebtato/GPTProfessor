@@ -9,7 +9,7 @@ def ask_form(collection: DocumentCollection):
     with st.form("ask_form"):
         st.write("Ask a question and get a quick response. Works better with more specific questions.")
         st.markdown("######")
-        text = st.text_area(
+        question = st.text_area(
             "Question",
             placeholder="Ask me anything, as long as it is in your documents! ",
         )
@@ -33,7 +33,41 @@ def ask_form(collection: DocumentCollection):
             and st.session_state["current_collection_id"]
         ):
             with st.spinner():
-                qa.generate_response(text, model, collection)
+                qa.generate_qa_answer(question, model, collection)
+
+
+def chat_form(collection: DocumentCollection):
+    st.write("Have a converation! Please note that the answers from here will probably be less refined than the Q&A answers.")
+
+
+def quiz_form(collection: DocumentCollection):
+    with st.form("quiz_form"):
+        st.write("Choose a topic from your documents to create study questions for.")
+        st.markdown("######")
+        topic = st.text_input(
+            "Topic",
+            placeholder="Choose a topic!",
+        )
+        model = st.radio(
+            "Select Model",
+            ("GPT-3.5", "GPT-4"),
+            captions=[
+                "This model is also the basis for ChatGPT.",
+                "Highly capable next-generation model. Requires special OpenAI access. May hurt your wallet.",
+            ],
+        )
+        submitted_question = st.form_submit_button("Submit", use_container_width=True)
+        if not config.openai_api_key.startswith("sk-"):
+            st.warning("Please enter your OpenAI API key!", icon="⚠")
+        if not st.session_state["current_collection_id"]:
+            st.error("Error, invalid collection.", icon="⚠")
+        if (
+            submitted_question
+            and config.openai_api_key.startswith("sk-")
+            and st.session_state["current_collection_id"]
+        ):
+            with st.spinner():
+                qa.generate_quiz_questions(topic, model, collection)
 
 
 def manual_collection_update_form(collection: DocumentCollection):
