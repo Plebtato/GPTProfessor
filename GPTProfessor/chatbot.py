@@ -2,10 +2,12 @@ import config
 import utils
 from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationSummaryBufferMemory
-from langchain.chains import ConversationalRetrievalChain
 from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
 from documents import DocumentCollection
-from prompts import CHAT_PROMPT
+from prompts import CHAT_AGENT_PROMPT
+from langchain.agents.agent_toolkits import create_retriever_tool
+from langchain.agents import AgentExecutor
+from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent
 
 
 def generate_chat_response(
@@ -24,14 +26,19 @@ def generate_chat_response(
         chat_memory=message_history,
         llm=llm,
         max_token_limit=token_limit_max,
-        memory_key="chat_history",
+        return_messages=True
+        # memory_key="chat_history",
     )
 
-    qa = ConversationalRetrievalChain.from_llm(
-        llm,
-        retriever=collection.vector_db.as_retriever(search_kwargs={"k": 8}),
-        memory=memory,
-        get_chat_history=lambda h: h,
-        combine_docs_chain_kwargs={"prompt": CHAT_PROMPT},
+    retriever = collection.vector_db.as_retriever(search_kwargs={"k": 8})
+    tool = create_retriever_tool(
+        retriever,
+        "search_collection",
+        "Searches and returns documents regarding the user's questions.",
     )
-    return qa({"question": text})["answer"]
+    tools = [tool]
+    agent = OpenAIFunctionsAgent(llm=llm, tools=tools, prompt=CHAT_AGENT_PROMPT)
+    agent_executor = AgentExecutor(
+        agent=agent, tools=tools, memory=memory, verbose=True
+    )
+    return agent_executor({"input": text})["output"]

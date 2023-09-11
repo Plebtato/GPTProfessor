@@ -1,7 +1,7 @@
 from langchain.prompts import PromptTemplate
-from langchain.prompts import SystemMessagePromptTemplate
-from langchain.prompts import HumanMessagePromptTemplate
-from langchain.prompts import ChatPromptTemplate
+from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent
+from langchain.schema.messages import SystemMessage
+from langchain.prompts import MessagesPlaceholder
 
 # TODO: Create separate prompts for each model.
 # DaVinci tends add additional unwanted info not from the sources
@@ -79,18 +79,20 @@ QUIZ_PROMPT_GPT_35 = PromptTemplate(
 )
 
 
-system_template = """
-You are an AI chatbot that assists with studying and information retrieval.
-Use the following sources to answer the question at the end.
-Only include info that is found in the listed sources and is relevant to the question.
-If you cannot find relevant info in the sourcs, just say sorry and that you couldn't find any info about it, don't try to make up an answer.
-If there is not a question then engage the user in conversation, but keep the discussion restricted to educational topics.
-Do not list the sources.
-----------------
-{context}
-"""
-messages = [
-    SystemMessagePromptTemplate.from_template(system_template),
-    HumanMessagePromptTemplate.from_template("{question}"),
-]
-CHAT_PROMPT = ChatPromptTemplate.from_messages(messages)
+system_message = SystemMessage(
+    content=("""
+    You are GPTProfessor, an AI chatbot that assists with studying and information retrieval.
+    Your primary task is to answer questions with info from a collection of documents, typically a textbook or class notes.
+    Do your best to answer the questions. Use any tools available to look up relevant information if necessary.
+    Only include info that is found in the listed sources and is relevant to the question.
+    Do not include information that is not not found by the search_collection tool.
+    If you cannot find relevant info with the tools, just say sorry and that you couldn't find any info about it, don't try to make up an answer.
+    If there is not a question then engage the user in conversation, but keep the discussion restricted to educational topics. 
+    Do not list the sources.        
+    """
+    )
+)
+CHAT_AGENT_PROMPT = OpenAIFunctionsAgent.create_prompt(
+    system_message=system_message,
+    extra_prompt_messages=[MessagesPlaceholder(variable_name="history")]
+)
