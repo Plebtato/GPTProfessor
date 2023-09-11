@@ -8,17 +8,12 @@ from langchain.chains.qa_with_sources import load_qa_with_sources_chain
 from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import LLMChainFilter
-from langchain.schema import (
-    AIMessage,
-    HumanMessage,
-    SystemMessage
-)
 import prompts
 from documents import DocumentCollection
 
 
 def generate_qa_answer(query, model, collection: DocumentCollection):
-    model_name, max_tokens_limit = utils.get_model(model)
+    model_name, token_limit_source = utils.get_model(model)
 
     if model == "GPT-4":
         qa_prompt = prompts.QA_PROMPT_GPT_35
@@ -48,7 +43,7 @@ def generate_qa_answer(query, model, collection: DocumentCollection):
         combine_documents_chain=load_chain,
         retriever=compression_retriever,
         reduce_k_below_max_tokens=True,
-        max_tokens_limit=max_tokens_limit,
+        max_tokens_limit=token_limit_source,
         return_source_documents=True,
     )
 
@@ -61,7 +56,7 @@ def generate_qa_answer(query, model, collection: DocumentCollection):
 
 
 def generate_quiz_questions(topic, model, collection: DocumentCollection):
-    model_name, max_tokens_limit = utils.get_model(model)
+    model_name, token_limit_source = utils.get_model(model)
 
     if model == "GPT-4":
         quiz_prompt = prompts.QUIZ_PROMPT_GPT_35
@@ -86,7 +81,7 @@ def generate_quiz_questions(topic, model, collection: DocumentCollection):
         combine_documents_chain=load_chain,
         retriever=compression_retriever,
         reduce_k_below_max_tokens=True,
-        max_tokens_limit=max_tokens_limit,
+        max_tokens_limit=token_limit_source,
         return_source_documents=True,
     )
 

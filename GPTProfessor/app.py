@@ -43,13 +43,13 @@ else:
 
     if st.session_state["chat_popup"]:
         # Initialize chat history
-        if "messages_" + str(collection.id) not in st.session_state:
-            st.session_state["messages_" + str(collection.id)] = [
-                {
-                    "role": "assistant",
-                    "content": "Hello there! Feel free to ask questions and discuss!",
-                }
-            ]
+        # if "messages_" + str(collection.id) not in st.session_state:
+        #     st.session_state["messages_" + str(collection.id)] = [
+        #         {
+        #             "role": "assistant",
+        #             "content": "Hello there! Feel free to ask questions and discuss!",
+        #         }
+        #     ]
 
         st.markdown("######")
         components.chat_interface.chat(collection)

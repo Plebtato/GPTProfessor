@@ -1,29 +1,36 @@
 import streamlit as st
 import config
+import chatbot
 from documents import DocumentCollection
+from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
 
 
 def chat(collection: DocumentCollection):
+    message_history = StreamlitChatMessageHistory(
+        key="message_history_" + str(collection.id)
+    )
+
     if not st.session_state["chat_model"]:
         st.session_state["chat_model"] = "GPT-3.5"
 
-    for message in st.session_state["messages_" + str(collection.id)]:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+    st.chat_message("assistant").markdown(
+        "Hello there! Feel free to ask questions and discuss!"
+    )
 
-    # React to user input
+    for message in message_history.messages:
+        st.chat_message(message.type).write(message.content)
+
     if prompt := st.chat_input("Say something!"):
-        # Display user message in chat message container
         st.chat_message("user").markdown(prompt)
-        # Add user message to chat history
-        st.session_state["messages_" + str(collection.id)].append({"role": "user", "content": prompt})
 
-        response = f"Echo: {prompt}"
-        # Display assistant response in chat message container
-        with st.chat_message("assistant"):
-            st.markdown(response)
-        # Add assistant response to chat history
-        st.session_state["messages_" + str(collection.id)].append({"role": "assistant", "content": response})
+        response = chatbot.generate_chat_response(
+            text=prompt,
+            collection=collection,
+            message_history=message_history,
+            model=st.session_state["chat_model"],
+        )
+
+        st.chat_message("assistant").markdown(response)
 
     st.button(
         ":arrow_backward: Return to Main Page",

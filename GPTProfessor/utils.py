@@ -13,11 +13,14 @@ def chunks(lst, n):
 def get_model(model):
     if model == "GPT-4":
         model_name = "gpt-4"
-        max_tokens_limit = 6750
+        token_limit_before_response = 6750
+        token_limit_max = 8192
     elif model == "GPT-3.5":
         model_name = "gpt-3.5-turbo"
-        max_tokens_limit = 3375
+        token_limit_before_response = 3375
+        token_limit_max = 4097
     elif model == "DaVinci":
         model_name = "text-davinci-003"
-        max_tokens_limit = 3375
-    return model_name, max_tokens_limit
+        token_limit_before_response = 3375
+        token_limit_max = 4097
+    return model_name, token_limit_before_response, token_limit_max

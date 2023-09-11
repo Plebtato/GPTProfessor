@@ -1,4 +1,7 @@
 from langchain.prompts import PromptTemplate
+from langchain.prompts import SystemMessagePromptTemplate
+from langchain.prompts import HumanMessagePromptTemplate
+from langchain.prompts import ChatPromptTemplate
 
 # TODO: Create separate prompts for each model.
 # DaVinci tends add additional unwanted info not from the sources
@@ -74,3 +77,20 @@ Topic: {question}
 QUIZ_PROMPT_GPT_35 = PromptTemplate(
     template=quiz_template_gpt_35, input_variables=["summaries", "question"]
 )
+
+
+system_template = """
+You are an AI chatbot that assists with studying and information retrieval.
+Use the following sources to answer the question at the end.
+Only include info that is found in the listed sources and is relevant to the question.
+If you cannot find relevant info in the sourcs, just say sorry and that you couldn't find any info about it, don't try to make up an answer.
+If there is not a question then engage the user in conversation, but keep the discussion restricted to educational topics.
+Do not list the sources.
+----------------
+{context}
+"""
+messages = [
+    SystemMessagePromptTemplate.from_template(system_template),
+    HumanMessagePromptTemplate.from_template("{question}"),
+]
+CHAT_PROMPT = ChatPromptTemplate.from_messages(messages)
