@@ -13,7 +13,7 @@ from documents import DocumentCollection
 
 
 def generate_qa_answer(query, model, collection: DocumentCollection):
-    model_name, token_limit_source = utils.get_model(model)
+    model_name, token_limit_source, token_limit_max = utils.get_model(model)
 
     if model == "GPT-4":
         qa_prompt = prompts.QA_PROMPT_GPT_35
@@ -56,7 +56,7 @@ def generate_qa_answer(query, model, collection: DocumentCollection):
 
 
 def generate_quiz_questions(topic, model, collection: DocumentCollection):
-    model_name, token_limit_source = utils.get_model(model)
+    model_name, token_limit_source, token_limit_max = utils.get_model(model)
 
     if model == "GPT-4":
         quiz_prompt = prompts.QUIZ_PROMPT_GPT_35
