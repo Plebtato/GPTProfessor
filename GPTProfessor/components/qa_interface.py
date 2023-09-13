@@ -7,11 +7,11 @@ from documents import DocumentCollection
 
 
 def ask_form(collection: DocumentCollection):
+    st.write(
+        "Ask a question and get a quick response. Works better with more specific questions."
+    )
+    st.markdown("######")
     with st.form("ask_form"):
-        st.write(
-            "Ask a question and get a quick response. Works better with more specific questions."
-        )
-        st.markdown("######")
         question = st.text_area(
             "Question",
             placeholder="Ask me anything, as long as it is in your documents! ",
@@ -40,31 +40,32 @@ def ask_form(collection: DocumentCollection):
 
 
 def open_chat_form(collection: DocumentCollection):
-    with st.form("chat_form"):
-        st.write(
-            "Have a converation! Please note that the answers from here will probably be less refined than the Q&A answers."
-        )
-        st.markdown("######")
-        model = st.radio(
-            "Select Model",
-            ("GPT-3.5", "GPT-4"),
-            captions=[
-                "This model is the basis for ChatGPT.",
-                "Highly capable next-generation model. Requires special OpenAI access. May hurt your wallet.",
-            ],
-        )
-        st.form_submit_button(
-            "Launch Chat",
-            use_container_width=True,
-            on_click=components.chat_interface.open_popup,
-            args=(model,),
-        )
+    st.write(
+        "Have a converation! Please note that the answers from here will probably be less refined than the Q&A answers."
+    )
+    st.markdown("######")
+    model = st.radio(
+        "Select Model",
+        ("GPT-3.5", "GPT-4"),
+        captions=[
+            "This model is the basis for ChatGPT.",
+            "Highly capable next-generation model. Requires special OpenAI access. May hurt your wallet.",
+        ],
+    )
+    submit = st.button(
+        "Launch Chat",
+        use_container_width=True,
+        on_click=components.chat_interface.open_popup,
+        args=(model,),
+    )
+    if submit:
+        print("Init chat with " + st.session_state["chat_model"])
 
 
 def quiz_form(collection: DocumentCollection):
+    st.write("Choose a topic from your documents to create study questions for.")
+    st.markdown("######")
     with st.form("quiz_form"):
-        st.write("Choose a topic from your documents to create study questions for.")
-        st.markdown("######")
         topic = st.text_input(
             "Topic",
             placeholder="Choose a topic!",
