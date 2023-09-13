@@ -28,7 +28,7 @@ def generate_qa_answer(query, model, collection: DocumentCollection):
     compressor = LLMChainFilter.from_llm(llm)
     compression_retriever = ContextualCompressionRetriever(
         base_compressor=compressor,
-        base_retriever=collection.vector_db.as_retriever(search_kwargs={"k": 8}),
+        base_retriever=collection.vector_db.as_retriever(search_kwargs={"k": 6}),
     )
     # llm_retriever = MultiQueryRetriever.from_llm(
     #     retriever=vectordb.as_retriever(search_kwargs={"k": 8}), llm=llm
@@ -69,7 +69,7 @@ def generate_quiz_questions(topic, model, collection: DocumentCollection):
     compressor = LLMChainFilter.from_llm(llm)
     compression_retriever = ContextualCompressionRetriever(
         base_compressor=compressor,
-        base_retriever=collection.vector_db.as_retriever(search_kwargs={"k": 16}),
+        base_retriever=collection.vector_db.as_retriever(search_kwargs={"k": 12}),
     )
     load_chain = load_qa_with_sources_chain(
         llm=llm,

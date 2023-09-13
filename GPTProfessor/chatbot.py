@@ -30,7 +30,7 @@ def generate_chat_response(
         # memory_key="chat_history",
     )
 
-    retriever = collection.vector_db.as_retriever(search_kwargs={"k": 8})
+    retriever = collection.vector_db.as_retriever(search_kwargs={"k": 3})
     tool = create_retriever_tool(
         retriever,
         "search_collection",
