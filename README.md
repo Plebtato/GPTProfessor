@@ -20,7 +20,7 @@ Run the app with Streamlit:
 ```
 streamlit run GPTProfessor/app.py
 ```
-Once the application is running, you can access it through the link provided by Streamlit. 
+Once the application is running, you can access it through the link provided by Streamlit. You can add your token manually in your sidebar or through your environment variables (preferred!).
 
 ## Features
 
