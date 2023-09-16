@@ -1,21 +1,24 @@
-# gpt-note-search
+# GPTProfessor
 
-Activate venv (Windows):
-.venv/scripts/activate.ps1
+An LLM-powered study application that reads your course notes and provides assistance with Q&A, chat, and quizzing.
 
-Run:
+## Features
+
+
+
+
+
+## Installation
+
+Clone the repository: 
+```
+https://github.com/Plebtato/GPTProfessor.git
+```
+Install the dependencies (venv recommended):
+```
+pip install -r requirements.txt
+```
+Run the app with Streamlit:
+```
 streamlit run GPTProfessor/app.py
-
-Packages:
-streamlit
-langchain
-openai
-tiktoken
-chromadb
-pypdf
-pypdf2
-python-docx
-docx2txt
-google-api-python-client
-google-auth-httplib2
-google-auth-oauthlib
+```
