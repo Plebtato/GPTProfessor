@@ -39,7 +39,7 @@ This project integrates Langchain's Document QA and chat pipelines, as shown bel
 
 ![image](https://github.com/Plebtato/GPTProfessor/assets/19521127/eea0a4fc-73d1-4883-8cbe-64ff631342cd)
 ![image](https://github.com/Plebtato/GPTProfessor/assets/19521127/f5c4c437-2ce3-47ac-b051-d9fca4b1a260)
-[Diagrams sourced from Langchain](https://python.langchain.com/docs/get_started/introduction)
+[Diagram Source](https://python.langchain.com/docs/get_started/introduction)
 
 ## Interface
 <img width="1280" alt="image" src="https://github.com/Plebtato/GPTProfessor/assets/19521127/53d38173-3b09-439e-a06b-899cc92881c4">
