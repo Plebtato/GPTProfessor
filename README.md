@@ -1,6 +1,6 @@
 # GPTProfessor
 
-An LLM-powered study application that reads your course notes and provides assistance with Q&A, chat, and quizzing.
+An LLM-powered study application that reads your course notes and provides assistance with Q&A, chat, and quizzing. Built with Langchain and Streamlit.
 
 ## Installation
 
